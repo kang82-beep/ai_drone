@@ -1,0 +1,20 @@
+{
+  "INPUT_IMG_DIR": "C:/ai drone/input",
+  "OUTPUT_ROOT": "C:/ai drone/results/run01",
+  "MASKRCNN_WEIGHTS": "C:/ai drone/weights/maskrcnn.pth",
+  "CLF_WEIGHTS": "C:/ai drone/weights/classifier.pth",
+  "DJI_IRP_EXE": "C:/dji_thermal_sdk/utility/bin/windows/release_x64/dji_irp.exe",
+  "MRK_CSV_PATH": "",
+  "NAV_CSV_PATH": "",
+  "REGION_GEOJSON_PATH": "",
+  "SNAP_ENABLE": false,
+  "MODULE_CATALOG_JSON": "",
+  "USE_ORTHO_TIF": false,
+  "ORTHO_TIF_PATH": "",
+  "BATCH_SIZE": 64,
+  "TWO_ROW_FILTER_ENABLE": true,
+  "ARRAY_REVIEW_ENABLE": true,
+  "VWORLD_API_KEY": "",
+  "BLENDER_EXE": "",
+  "BLENDER_SCENE": ""
+}

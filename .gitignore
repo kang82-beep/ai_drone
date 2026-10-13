@@ -1,0 +1,16 @@
+# 분석 결과와 임시 파일 (용량이 크고 다시 만들 수 있음)
+results/
+tmp/
+__pycache__/
+*.pyc
+
+# 학습 가중치 (GitHub 100MB 제한 초과, 별도 백업 필요)
+model/*.pth
+
+# DJI Thermal SDK (외부 배포본)
+dji_thermal_sdk_*/
+
+# 개인 설정: API 키와 로컬 경로 포함
+config.local.json
+
+node_modules/

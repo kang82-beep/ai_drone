@@ -1,0 +1,9 @@
+{
+  "texture_origin": "Deterministically authored procedural PBR approximations; not measured site scans.",
+  "ground_reference": "Preconstruction site photographs: muted grey/brown soil, gravel and reeds. Current finished surface unknown.",
+  "panel_reference": "Generic illustrative 6x10 cell grid; installed product cell construction is not photographically verified.",
+  "source_dwg_sha256": "2a5d2739f58571500cb4dbee9aa666d2428ac67c48e01c2d5b11a0e918f268f3",
+  "module_count": 30000,
+  "coordinate_conversion": "Three.js (east, elevation, -north); source (east,north,elevation)",
+  "physics_scope": "Static scene and navigation collisions; no structural, aerodynamic or thermal simulation."
+}
