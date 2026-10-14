@@ -6,7 +6,9 @@ ROOT=Path(__file__).resolve().parent
 SRC=ROOT/'shinan3_viewer'
 parser=argparse.ArgumentParser()
 parser.add_argument('--output',default=str(ROOT/'results/shinan3_delivery/ThreeJS'))
-OUT=Path(parser.parse_args().output)
+parser.add_argument('--console-data',action='append',default=[],help='Script loaded before the viewer, e.g. ../data/site.js for the web console link')
+ARGS=parser.parse_args()
+OUT=Path(ARGS.output)
 OUT.mkdir(parents=True,exist_ok=True)
 app=(SRC/'app.js').read_text(encoding='utf-8')
 imports='\n'.join(re.findall(r'^import .*?;\s*$',app,re.M))
@@ -25,7 +27,8 @@ html=html.replace('<link rel="stylesheet" href="style.css">','<style>'+(SRC/'sty
 html=re.sub(r'<script type="importmap">.*?</script>','',html,flags=re.S)
 script='window.SHINAN_TEXTURES='+json.dumps(textures,separators=(',',':'))+';\n'+bundle.read_text(encoding='utf-8')
 script=script.replace('</script','<\\/script')
-html=html.replace('<script type="module" src="app.js"></script>','<script>'+script+'</script>')
+data_tags=''.join(f'<script src="{src}"></script>' for src in ARGS.console_data)
+html=html.replace('<script type="module" src="app.js"></script>',data_tags+'<script>'+script+'</script>')
 (OUT/'Shinan3_Viewer.html').write_text(html,encoding='utf-8')
 refs=OUT/'assets/reference';refs.mkdir(parents=True,exist_ok=True)
 for p in (SRC/'assets/reference').iterdir():

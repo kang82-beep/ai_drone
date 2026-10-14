@@ -43,5 +43,7 @@ export function createSolarControls(onChange){
   $('solar-reset').onclick=()=>{stop();settings={...DEFAULT_SITE,date:today,minutes:720};sync();refresh();};
   $('solar-play').onclick=()=>{if(playing){stop();save();return;}if(settings.minutes>=Number($('sun').max)-1)settings.minutes=Number($('sun').min);playing=true;$('solar-play').textContent='Ⅱ 일시 정지';$('solar-play').setAttribute('aria-pressed','true');};
   document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();});sync();refresh();
-  return {tick(dt){if(!playing)return;accum+=dt;if(accum<.12)return;settings.minutes=Math.min(Number($('sun').max),settings.minutes+accum*(Number($('sun').max)-Number($('sun').min))/60);accum=0;publish();if(settings.minutes>=Number($('sun').max)){stop();save();}},inspect:()=>({...settings,...events,playing,...solarPosition(settings.date,settings.minutes,settings.latitude,settings.longitude)})};
+  // Used by console_link.js to show the sun of a capture time; minutes are KST like the slider.
+  function setTime(date,minutes){const next={...settings,date,minutes};if(!valid(next))return false;stop();settings=next;sync();refresh();return true;}
+  return {setTime,tick(dt){if(!playing)return;accum+=dt;if(accum<.12)return;settings.minutes=Math.min(Number($('sun').max),settings.minutes+accum*(Number($('sun').max)-Number($('sun').min))/60);accum=0;publish();if(settings.minutes>=Number($('sun').max)){stop();save();}},inspect:()=>({...settings,...events,playing,...solarPosition(settings.date,settings.minutes,settings.latitude,settings.longitude)})};
 }

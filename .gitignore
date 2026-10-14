@@ -17,3 +17,5 @@ node_modules/
 
 # 웹 관제 화면용 내보내기 결과 (export_web_data.py가 다시 만든다)
 web/data/
+# 웹 관제용 상세 3D 뷰어 빌드 결과 (build_shinan3_portable.py --output web/viewer --console-data ../data/site.js)
+web/viewer/

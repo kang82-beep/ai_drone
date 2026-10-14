@@ -14,6 +14,7 @@ const store = {
 const state = {
   theme: store.get('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
   filter: 'all', query: '', module: null, obs: 0, zoom: 1, layer: 'final', lightbox: false,
+  stage: store.get('stage') === '3d' ? '3d' : 'map',
   orders: JSON.parse(store.get('orders') || '{}'),
   reviews: JSON.parse(store.get('reviews') || '{}'),
 };
@@ -126,7 +127,7 @@ function shell(page, body) {
   <div class="tools">
     <div class="cond"><span>${icon('sun')}${F.irradiance_w_m2 == null ? '일사 미기록' : int(F.irradiance_w_m2) + ' W/m²'}</span><i></i>
       <span>${icon('wind')}${F.wind_m_s == null ? '풍속 미기록' : num(F.wind_m_s) + ' m/s'}</span><i></i>${condition}</div>
-    <a class="btn" href="../results/shinan3_inspection_preview/ThreeJS/Shinan3_Viewer.html" target="_blank" rel="noopener" title="전기실·케이블까지 걸어 다니며 보는 상세 3D">${icon('cube')}상세 3D</a>
+    <a class="btn" href="viewer/Shinan3_Viewer.html" target="_blank" rel="noopener" title="전기실·케이블까지 걸어 다니며 보는 상세 3D">${icon('cube')}상세 3D</a>
     <button class="btn icon" data-act="theme" title="밝은 화면 / 어두운 화면" aria-label="화면 테마 전환">${icon(state.theme === 'dark' ? 'sun' : 'moon')}</button>
   </div>
 </header>
@@ -246,6 +247,9 @@ function rgbView(o, zoom) {
 }
 const zoomSeg = () => `<div class="seg">${[1, 2, 4].map(z => `<button class="${state.zoom === z ? 'on' : ''}" data-act="zoom" data-id="${z}">${z}x</button>`).join('')}</div>`;
 
+// Detailed 3D viewer (shinan3_viewer, built into web/viewer) at this module, sun set to its capture time.
+const viewerLink = candidate => `viewer/Shinan3_Viewer.html?module=${encodeURIComponent(candidate.id)}&at=${encodeURIComponent(candidate.observations[0]?.time || '')}`;
+
 function candidatePanel(candidate) {
   const o = candidate.observations[Math.min(state.obs, candidate.observations.length - 1)];
   const visible = S.candidates.filter(matches), position = visible.findIndex(c => c.id === candidate.id);
@@ -263,6 +267,7 @@ function candidatePanel(candidate) {
     <div class="row">
       <button class="btn ${picked ? 'on' : 'primary'}" style="flex:1" data-act="pick" data-id="${esc(candidate.id)}">${icon(picked ? 'check' : 'plus')}${picked ? '점검 목록에 담김' : '점검 목록에 담기'}</button>
       ${stringMates.length > 1 ? `<button class="btn" data-act="pick-string" data-id="${esc(candidate.string)}" title="같은 스트링의 후보 ${stringMates.length}건을 함께 담습니다">스트링 후보 ${stringMates.length}건 담기</button>` : ''}</div>
+    <a class="btn" href="${esc(viewerLink(candidate))}" target="_blank" rel="noopener" title="상세 3D 발전소에서 이 모듈로 이동하고 촬영 시각의 해로 그림자를 봅니다">${icon('cube')}3D 현장 보기 (촬영 시각 그림자)</a>
     <section><div class="between"><h3>영상</h3><div class="row">${zoomSeg()}<button class="btn icon" data-act="lightbox" title="크게 보기" aria-label="영상 크게 보기">${icon('expand')}</button></div></div>
       <div class="views">${thermalView(o, state.zoom)}${rgbView(o, state.zoom)}</div>
       <p class="sub mono">프레임 ${esc(frameNo(o.image_id))} · ${time(o.time)} · 도면 위치와의 거리 ${num(o.link_distance_m, 2)} m</p></section>
@@ -327,14 +332,15 @@ function overview(params) {
   </aside>
   <section class="pane mapbox">
     <div id="map-slot"></div>
-    <div class="float tl"><div class="seg">${[['final', '판정'], ['delta', '주변 대비 온도차']].map(([key, label]) => `<button class="${state.layer === key ? 'on' : ''}" data-act="layer" data-id="${key}">${label}</button>`).join('')}</div></div>
-    <div class="float tr"><button class="btn" data-act="fit" data-id="site">전체</button><button class="btn" data-act="fit" data-id="observed">관측 구역</button>
+    <div class="float tl"><div class="seg">${[['map', '개요 지도'], ['3d', '현장 3D']].map(([key, label]) => `<button class="${state.stage === key ? 'on' : ''}" data-act="stage" data-id="${key}">${label}</button>`).join('')}</div>
+      ${state.stage === '3d' ? '' : `<div class="seg">${[['final', '판정'], ['delta', '주변 대비 온도차']].map(([key, label]) => `<button class="${state.layer === key ? 'on' : ''}" data-act="layer" data-id="${key}">${label}</button>`).join('')}</div>`}</div>
+    ${state.stage === '3d' ? `<div class="float tr legend"><span><i class="lg crit"></i>점검 대상</span><span><i class="lg warn"></i>재확인</span><span class="t-mute">후보를 고르면 그 모듈로 이동하고 해를 촬영 시각으로 맞춥니다</span></div>` : `<div class="float tr"><button class="btn" data-act="fit" data-id="site">전체</button><button class="btn" data-act="fit" data-id="observed">관측 구역</button>
       <button class="btn" data-act="view" data-id="top">위에서</button><button class="btn" data-act="view" data-id="tilt">기울여</button>
       <button class="btn icon" data-act="mapzoom" data-id="0.6" aria-label="확대">${icon('plus')}</button><button class="btn icon" data-act="mapzoom" data-id="1.6" aria-label="축소">${icon('minus')}</button></div>
     <div class="float bl legend">${state.layer === 'final'
       ? `<span><i class="lg crit"></i>점검 대상</span><span><i class="lg warn"></i>재확인</span><span><i class="lg ok"></i>후보 없음</span><span><i class="lg"></i>미관측</span>`
       : `<span>−2℃</span><i class="ramp"></i><span>+4℃</span><span><i class="lg"></i>미관측</span>`}<span><i class="lg pri"></i>선택한 스트링</span></div>
-    <div class="float br sub">끌기: 이동 · 오른쪽 끌기: 회전 · 휠: 확대</div>
+    <div class="float br sub">끌기: 이동 · 오른쪽 끌기: 회전 · 휠: 확대</div>`}
   </section>
   <aside class="pane detail" id="detail">${candidate ? candidatePanel(candidate) : index != null ? modulePanel(index) : summaryPanel()}</aside>
 </div>
@@ -429,9 +435,9 @@ function orders() {
 
 function exportCsv() {
   const quote = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
-  const lines = [['인버터', '접속반', '스트링', '모듈', '모듈 판정', '판정 사유', '관측 판정', '주변 대비(℃)', '최고 온도(℃)', '후보 횟수', '관측 횟수', '판정 근거', '형상', '그림자 의심', '상태', '현장 확인 원인', '조치', '확인자·메모']];
+  const lines = [['인버터', '접속반', '스트링', '모듈', '모듈 판정', '판정 사유', '관측 판정', '주변 대비(℃)', '최고 온도(℃)', '후보 횟수', '관측 횟수', '판정 근거', '형상', '그림자 의심', '상태', '현장 확인 원인', '조치', '확인자·메모', '3D 위치']];
   orderRows().forEach(({ c, o }) => lines.push([c.inverter, c.jb, c.string, c.id, VERDICT[c.verdict || 'inspect'][0], c.verdict_reason || '', FINAL[c.final][0], num(c.max_neighbor_delta), num(c.observations[0].max_temp), c.flagged_count, c.observation_count,
-    c.observations[0].reasons.map(r => REASON[r]).join(' / ') || '분류 모델', TYPE[c.type] || '', c.shadow ? (SHADOW_REVIEW[state.reviews[c.id]] || ['확인 필요'])[0] : '', o.status, o.cause, o.action, o.memo]));
+    c.observations[0].reasons.map(r => REASON[r]).join(' / ') || '분류 모델', TYPE[c.type] || '', c.shadow ? (SHADOW_REVIEW[state.reviews[c.id]] || ['확인 필요'])[0] : '', o.status, o.cause, o.action, o.memo, new URL(viewerLink(c), location.href).href]));
   // BOM so Excel opens the Korean text as UTF-8.
   const url = URL.createObjectURL(new Blob(['﻿' + lines.map(line => line.map(quote).join(',')).join('\r\n')], { type: 'text/csv' }));
   Object.assign(document.createElement('a'), { href: url, download: `점검목록_${S.site.name}_${new Date().toISOString().slice(0, 10)}.csv` }).click();
@@ -474,17 +480,50 @@ function mountMap() {
 }
 const observedIndices = () => [...M.state].flatMap((s, i) => s === '0' ? [] : [i]);
 
+// The detailed viewer lives in one iframe that is never moved in the DOM (moving reloads it);
+// it is laid over the map panel while the 현장 3D stage is shown.
+const viewerHost = Object.assign(document.createElement('div'), { className: 'viewer-host', hidden: true });
+document.body.append(viewerHost);
+let viewerFrame = null, viewerReady = false, viewerPending = null;
+function sendToViewer(id) {
+  const candidate = candidateById.get(id);
+  viewerPending = id ? { type: 'aerosolar:select', module: id, at: candidate?.observations[0]?.time || '' } : null;
+  if (viewerReady && viewerPending) viewerFrame.contentWindow.postMessage(viewerPending, '*');
+}
+function placeViewer() {
+  const slot = document.getElementById('map-slot');
+  const show = state.stage === '3d' && route().page === 'overview' && !!slot;
+  viewerHost.hidden = !show;
+  if (!show) return;
+  if (!viewerFrame) {
+    viewerFrame = Object.assign(document.createElement('iframe'), { title: '현장 3D', allow: 'fullscreen' });
+    viewerFrame.src = 'viewer/Shinan3_Viewer.html?embed=1&view=overview';
+    viewerHost.append(viewerFrame);
+    sendToViewer(state.module);
+  }
+  const rect = slot.getBoundingClientRect();
+  Object.assign(viewerHost.style, { left: rect.left + scrollX + 'px', top: rect.top + scrollY + 'px', width: rect.width + 'px', height: rect.height + 'px' });
+}
+addEventListener('message', event => {
+  const message = event.data;
+  if (!viewerFrame || event.source !== viewerFrame.contentWindow || !message) return;
+  if (message.type === 'aerosolar:ready') { viewerReady = true; if (viewerPending) viewerFrame.contentWindow.postMessage(viewerPending, '*'); }
+  if (message.type === 'aerosolar:selected' && message.module !== state.module && indexById.has(message.module)) select(message.module, false, false);
+});
+addEventListener('resize', placeViewer);
+
 function render() {
   document.documentElement.dataset.theme = state.theme;
   const scrollers = ['#list', '#detail .pane-body'], keep = scrollers.map(selector => document.querySelector(selector)?.scrollTop);
   const { page, params } = route();
   mapHost.remove();
   app.innerHTML = shell(page, PAGES[page](params));
-  mountMap();
+  if (state.stage === 'map') mountMap();
+  placeViewer();
   scrollers.forEach((selector, i) => { const element = document.querySelector(selector); if (element && keep[i]) element.scrollTop = keep[i]; });
 }
 
-function select(id, focus = true) {
+function select(id, focus = true, toViewer = true) {
   const changed = id !== state.module;
   state.module = id;
   if (changed) { state.obs = 0; state.zoom = 1; }
@@ -492,6 +531,7 @@ function select(id, focus = true) {
   if (route().page !== 'overview') { location.hash = '#/overview'; }
   render();
   map?.select(id ? indexById.get(id) ?? -1 : -1, { focus });
+  if (toViewer && state.stage === '3d') sendToViewer(id);
   if (changed) document.querySelector('#detail .pane-body')?.scrollTo(0, 0);
   document.querySelector('#list .item.sel')?.scrollIntoView({ block: 'nearest' });
 }
@@ -539,6 +579,7 @@ document.addEventListener('click', event => {
   }
   if (act === 'theme') { state.theme = state.theme === 'dark' ? 'light' : 'dark'; store.set('theme', state.theme); map?.setTheme(state.theme); }
   if (act === 'layer') { state.layer = id; map?.setLayer(id); }
+  if (act === 'stage') { state.stage = id; store.set('stage', id); if (id === '3d') sendToViewer(state.module); }
   if (act === 'filter') state.filter = id;
   if (act === 'obs') state.obs = Number(id);
   if (act === 'zoom') state.zoom = Number(id);
