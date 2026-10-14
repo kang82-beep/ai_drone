@@ -60,6 +60,9 @@ const time = iso => iso ? iso.slice(11, 19) : '–';
 const frameNo = imageId => (imageId.match(/_(\d{4})_T$/) || [])[1] || imageId;
 
 const FINAL = { abnormal: ['이상', 'crit'], attention: ['주의', 'warn'], normal: ['정상', 'ok'] };
+// Module verdict from repeated views (pv_inspector/module_verdict.py).
+const VERDICT = { inspect: ['점검 대상', 'crit'], recheck: ['재확인', 'warn'], normal: ['정상', 'ok'] };
+const verdictChip = v => chip(VERDICT[v || 'inspect'][0], VERDICT[v || 'inspect'][1], true);
 const MAP_STATE = [['미관측', ''], ['후보 없음', 'ok'], ['주의', 'warn'], ['이상', 'crit']];
 // pv_inspector/anomaly_patterns.py TYPES; shade-like shapes are reported as shadow suspects to confirm.
 const TYPE = { single_cell: '단일 셀 핫스팟', multi_cell: '다중 셀 핫스팟', diode: '다이오드 의심 (1/3 띠)', whole_module: '모듈 전체 발열',
@@ -75,8 +78,8 @@ const ACTIONS = ['조치 없음', '청소', '제초', '모듈 교체 접수', '�
 const COMPONENTS = [
   ['촬영 조건 확인 (일사, 속도)', '규칙', 'part', '일사 기준만 구현'], ['방사온도 추출', 'DJI SDK', 'done', ''],
   ['모듈 검출·분할', 'Mask R-CNN', 'done', '정확도 미측정'], ['열화상–가시광 정합', '고정 변환 (M4T 짐벌)', 'part', S.rgb_alignment ? `오차 중앙값 ${num(S.rgb_alignment.offset_from_fixed_px_median, 0)}px · 프레임별 미세 조정 없음` : ''],
-  ['설비 주소 연결', 'RTK 투영 + 도면 정합', 'part', '한 칸 어긋남 미해결'], ['다중 촬영 통합', '규칙', 'part', '반사 제거 없음'],
-  ['주변 대비 온도차', '규칙', 'done', ''], ['접속반·인버터 단위 비교', '규칙', 'none', ''],
+  ['설비 주소 연결', 'RTK 투영 + 도면 정합', 'part', '한 칸 어긋남 미해결'], ['다중 촬영 통합', '규칙', 'done', '다수결 판정, 가장자리 관측 제외'],
+  ['주변 대비 온도차', '규칙', 'done', ''], ['접속반·인버터 단위 비교', '규칙', 'part', '반경 6m 이웃·스트링 비교, 인버터 단위는 전체 분석 후'],
   ['이상 탐지', '규칙 + EfficientNet-B3', 'done', '표시 영상 기반'], ['이상 유형 분류', '형상 규칙 (온도 배열)', 'part', '1차 규칙 · 현장 검증 전'],
   ['원인 추정', 'AI 에이전트', 'none', ''], ['손실·우선순위 산정', '규칙', 'none', ''],
   ['작업지시 생성', 'AI 에이전트', 'none', '지금은 사람이 점검 목록에 담음'], ['점검 결과 환류', '머신러닝 운영', 'part', '결과 입력·오경보율만'],
@@ -94,6 +97,8 @@ const indexById = new Map(M.ids.map((id, i) => [id, i]));
 const address = index => { const [string, jb, inverter] = M.strings[M.string[index]]; return { id: M.ids[index], string, jb, inverter, state: Number(M.state[index]) }; };
 const chunksDone = S.chunks.filter(c => c.status === 'done').length;
 const abnormalModules = S.candidates.filter(c => c.final === 'abnormal').length;
+const byVerdict = v => S.candidates.filter(c => (c.verdict || 'inspect') === v);
+const inspectCount = byVerdict('inspect').length, recheckCount = byVerdict('recheck').length;
 const scopeNote = `이상 후보와 주소 연결은 도면 정합을 마친 ${int(R.frames)}장 기준입니다 (분석 완료 ${int(F.analysed)}장).`;
 const chip = (text, tone = '', dot = false) => `<span class="chip ${tone}">${dot ? '<i class="dot"></i>' : ''}${esc(text)}</span>`;
 const finalChip = final => chip(FINAL[final][0], FINAL[final][1], true);
@@ -134,7 +139,7 @@ function stageStrip() {
   const steps = [
     ['촬영·수집', `${int(F.thermal_images)}쌍`, F.irradiance_w_m2 == null ? '일사 미기록' : `${int(F.irradiance_w_m2)} W/m²`, 'part', '#/pipeline'],
     ['자동 분석', `${num(pct(F.analysed, F.thermal_images), 0)}%`, `${int(F.analysed)} / ${int(F.thermal_images)}장${running ? ' · 실행 중' : ''}`, running ? 'run' : 'done', '#/pipeline'],
-    ['이상 탐지', `${int(S.candidates.length)}건`, `이상 ${abnormalModules} · 주의 ${S.candidates.length - abnormalModules} · 그림자 의심 ${S.candidates.filter(c => c.shadow).length}`, 'done', '#/overview'],
+    ['이상 탐지', `점검 ${inspectCount}건`, `재확인 ${recheckCount} · 그림자 의심 ${S.candidates.filter(c => c.shadow).length}`, 'done', '#/overview'],
     ['AI 원인 추정', '연결 전', '증거 묶음만 표시', 'none', '#/pipeline'],
     ['점검·환류', `${orderCount()}건`, '점검 목록에 담긴 모듈', orderCount() ? 'part' : 'none', '#/orders'],
   ];
@@ -145,7 +150,7 @@ function stageStrip() {
 // ---------- Overview: queue + 3D map + detail ----------
 function matches(candidate) {
   const text = state.query.trim().toLowerCase();
-  return (state.filter === 'all' || candidate.final === state.filter || (state.filter === 'picked' && state.orders[candidate.id])
+  return (state.filter === 'all' || (candidate.verdict || 'inspect') === state.filter || (state.filter === 'picked' && state.orders[candidate.id])
       || (state.filter === 'shadow' && candidate.shadow))
     && (!text || [candidate.id, candidate.string, candidate.jb, candidate.inverter].some(v => v.toLowerCase().includes(text)));
 }
@@ -153,7 +158,7 @@ function matches(candidate) {
 function listItems() {
   const items = S.candidates.filter(matches);
   if (!items.length) return empty('search', '조건에 맞는 후보가 없습니다', '검색어나 구분을 바꿔 보세요.');
-  return items.map(c => `<button class="item ${FINAL[c.final][1]} ${c.id === state.module ? 'sel' : ''}" data-act="module" data-id="${esc(c.id)}">
+  return items.map(c => `<button class="item ${VERDICT[c.verdict || 'inspect'][1]} ${c.id === state.module ? 'sel' : ''}" data-act="module" data-id="${esc(c.id)}">
     <span class="between"><b class="mono">${esc(c.id)}</b><span class="delta">${signed(c.max_neighbor_delta)}℃</span></span>
     <span class="between sub"><span>${esc(c.jb)} · ${esc(c.string)}</span><span>${state.orders[c.id] ? `<span class="t-pri">담김 · </span>` : ''}후보 ${c.flagged_count}/${c.observation_count}회</span></span>
     <span class="row wrap tags">${typeChip(c.type)}${c.shadow ? (state.reviews[c.id] ? chip(SHADOW_REVIEW[state.reviews[c.id]][0], SHADOW_REVIEW[state.reviews[c.id]][1]) : chip('그림자 의심', 'warn')) : ''}${c.edge_only ? chip('가장자리만', 'warn') : ''}</span></button>`).join('');
@@ -184,6 +189,8 @@ function summaryPanel() {
         <b class="mono">${esc(inv.id)}</b><span class="bar"><i style="width:${pct(inv.observed, inv.modules)}%;background:var(--ok)"></i></span>
         <span class="sub">${inv.observed ? `관측 ${num(pct(inv.observed, inv.modules), 0)}%` : '미관측'}</span>
         ${inv.flagged ? chip(`후보 ${inv.flagged}`, inv.abnormal ? 'crit' : 'warn') : '<span></span>'}</button>`).join('')}</div></section>
+    <section><h3>스트링 비교</h3><p class="sub">같은 접속반의 다른 스트링보다 평균 2℃ 이상 높은 스트링입니다. 스트링 단선·퓨즈를 의심할 수 있지만 음영도 같은 모양으로 나타납니다.</p>
+      ${(S.strings_flagged || []).length ? (S.strings_flagged || []).map(s => `<button class="invrow" data-act="string" data-id="${esc(s.string_id)}"><b class="mono">${esc(s.string_id)}</b><span class="sub">${esc(s.jb_id)}</span><span class="sub">모듈 ${int(s.modules_observed)}장</span>${chip(signed(s.string_delta) + '℃', 'warn')}</button>`).join('') : '<p class="sub">해당 스트링이 없습니다.</p>'}</section>
     <section><h3>형상 판정 (1차 규칙)</h3><p class="sub">후보 모듈을 가운데에서 찍힌 관측 기준으로 나눴습니다. 그림자 의심은 확인이 필요합니다.</p>
       <div class="dist">${Object.entries(S.pattern_types || {}).map(([key, value]) => `<div class="between"><span>${TYPE[key] || esc(key)}</span><b>${int(value)}</b></div>`).join('')}</div></section>
     <section><h3>판정 근거별 분포</h3>
@@ -245,8 +252,9 @@ function candidatePanel(candidate) {
   const picked = state.orders[candidate.id];
   const stringMates = S.candidates.filter(c => c.string === candidate.string);
   return `<div class="pane-head">
-    <div><div class="row wrap"><h2 class="mono">${esc(candidate.id)}</h2>${finalChip(candidate.final)}${typeChip(candidate.type)}${o.reasons.map(r => chip(REASON[r], r === 'hotspot' ? 'crit' : 'warn')).join('')}</div>
-      <p class="sub">${esc(candidate.inverter)} › ${esc(candidate.jb)} › ${esc(candidate.string)}</p></div>
+    <div><div class="row wrap"><h2 class="mono">${esc(candidate.id)}</h2>${verdictChip(candidate.verdict)}${typeChip(candidate.type)}${o.reasons.map(r => chip(REASON[r], r === 'hotspot' ? 'crit' : 'warn')).join('')}</div>
+      <p class="sub">${esc(candidate.inverter)} › ${esc(candidate.jb)} › ${esc(candidate.string)}</p>
+      ${candidate.verdict_reason ? `<p class="sub">판정: ${esc(candidate.verdict_reason)}${candidate.wide_delta != null ? `; 주변 ${int(candidate.wide_neighbours)}장 대비 ${signed(candidate.wide_delta)}℃` : ''}</p>` : ''}</div>
     <div class="row"><button class="btn icon" data-act="step" data-id="-1" title="이전 후보 (K)" aria-label="이전 후보" ${position <= 0 ? 'disabled' : ''}>${icon('left')}</button>
       <button class="btn icon" data-act="step" data-id="1" title="다음 후보 (J)" aria-label="다음 후보" ${position < 0 || position >= visible.length - 1 ? 'disabled' : ''}>${icon('right')}</button>
       <button class="btn icon" data-act="close" title="닫기 (Esc)" aria-label="상세 닫기">${icon('close')}</button></div></div>
@@ -287,7 +295,7 @@ function modulePanel(index) {
     <section>${a.state ? note('이 모듈은 촬영된 프레임에서 이상 후보로 걸리지 않았습니다. 정상 보증은 아니며, 놓쳤을 가능성은 현장 표본 검수로 확인합니다.')
       : note('이 모듈은 아직 도면 정합을 마친 촬영분에 없습니다. 결과가 없는 것이지 정상이라는 뜻이 아닙니다.')}</section>
     <section><h3>같은 스트링의 이상 후보 (${mates.length}건)</h3>
-      ${mates.length ? `<div class="list flat">${mates.map(c => `<button class="item ${FINAL[c.final][1]}" data-act="module" data-id="${esc(c.id)}">
+      ${mates.length ? `<div class="list flat">${mates.map(c => `<button class="item ${VERDICT[c.verdict || 'inspect'][1]}" data-act="module" data-id="${esc(c.id)}">
         <span class="between"><b class="mono">${esc(c.id)}</b><span class="delta">${signed(c.max_neighbor_delta)}℃</span></span></button>`).join('')}</div>` : '<p class="sub">이 스트링에는 후보가 없습니다.</p>'}</section>
   </div>`;
 }
@@ -306,13 +314,12 @@ function overview(params) {
   if (params.has('m')) { state.module = params.get('m'); state.obs = 0; state.zoom = 1; }
   if (params.size) history.replaceState(null, '', '#/overview');
   const candidate = candidateById.get(state.module), index = indexById.get(state.module);
-  const count = final => S.candidates.filter(c => c.final === final).length;
   const picked = S.candidates.filter(c => state.orders[c.id]).length;
   return `${stageStrip()}
 <div class="work ${state.module ? 'open' : ''}">
   <aside class="pane queue">
     <div class="pane-head"><h2>이상 후보</h2><span class="sub">${S.candidates.filter(matches).length} / ${S.candidates.length}건</span></div>
-    <div class="queue-tools"><div class="seg">${[['all', '전체'], ['abnormal', `이상 ${count('abnormal')}`], ['attention', `주의 ${count('attention')}`], ['shadow', `그림자 ${S.candidates.filter(c => c.shadow).length}`], ['picked', `담김 ${picked}`]]
+    <div class="queue-tools"><div class="seg">${[['all', '전체'], ['inspect', `점검 ${inspectCount}`], ['recheck', `재확인 ${recheckCount}`], ['shadow', `그림자 ${S.candidates.filter(c => c.shadow).length}`], ['picked', `담김 ${picked}`]]
       .map(([key, label]) => `<button class="${state.filter === key ? 'on' : ''}" data-act="filter" data-id="${key}">${label}</button>`).join('')}</div>
       <label class="search">${icon('search')}<input id="q" type="search" placeholder="모듈·스트링·접속반·인버터 ( / )" value="${esc(state.query)}" aria-label="후보 검색"></label></div>
     <div class="list" id="list">${listItems()}</div>
@@ -325,7 +332,7 @@ function overview(params) {
       <button class="btn" data-act="view" data-id="top">위에서</button><button class="btn" data-act="view" data-id="tilt">기울여</button>
       <button class="btn icon" data-act="mapzoom" data-id="0.6" aria-label="확대">${icon('plus')}</button><button class="btn icon" data-act="mapzoom" data-id="1.6" aria-label="축소">${icon('minus')}</button></div>
     <div class="float bl legend">${state.layer === 'final'
-      ? `<span><i class="lg crit"></i>이상</span><span><i class="lg warn"></i>주의</span><span><i class="lg ok"></i>후보 없음</span><span><i class="lg"></i>미관측</span>`
+      ? `<span><i class="lg crit"></i>점검 대상</span><span><i class="lg warn"></i>재확인</span><span><i class="lg ok"></i>후보 없음</span><span><i class="lg"></i>미관측</span>`
       : `<span>−2℃</span><i class="ramp"></i><span>+4℃</span><span><i class="lg"></i>미관측</span>`}<span><i class="lg pri"></i>선택한 스트링</span></div>
     <div class="float br sub">끌기: 이동 · 오른쪽 끌기: 회전 · 휠: 확대</div>
   </section>
@@ -387,8 +394,8 @@ function orders() {
 <div class="grid cols wide">
   <div class="card">
     <div class="head wrap"><div><h2>${icon('task')}점검 목록</h2><p class="sub">인버터 › 접속반 › 스트링 순으로 묶었습니다. 현장에서 확인한 결과를 바로 적을 수 있습니다.</p></div>
-      <div class="row wrap noprint"><button class="btn" data-act="pick-final" data-id="abnormal">${icon('plus')}이상 ${abnormalModules}건 담기</button>
-        <button class="btn" data-act="pick-final" data-id="all">${icon('plus')}후보 전부 담기</button>
+      <div class="row wrap noprint"><button class="btn" data-act="pick-final" data-id="inspect">${icon('plus')}점검 대상 ${inspectCount}건 담기</button>
+        <button class="btn" data-act="pick-final" data-id="all">${icon('plus')}재확인 포함 전부 담기</button>
         <button class="btn" data-act="csv" ${rows.length ? '' : 'disabled'}>${icon('download')}엑셀용 CSV</button>
         <button class="btn" data-act="print" ${rows.length ? '' : 'disabled'}>${icon('print')}인쇄</button>
         <button class="btn danger" data-act="clear" ${rows.length ? '' : 'disabled'}>${icon('trash')}비우기</button></div></div>
@@ -422,8 +429,8 @@ function orders() {
 
 function exportCsv() {
   const quote = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
-  const lines = [['인버터', '접속반', '스트링', '모듈', '판정', '주변 대비(℃)', '최고 온도(℃)', '후보 횟수', '관측 횟수', '판정 근거', '형상', '그림자 의심', '상태', '현장 확인 원인', '조치', '확인자·메모']];
-  orderRows().forEach(({ c, o }) => lines.push([c.inverter, c.jb, c.string, c.id, FINAL[c.final][0], num(c.max_neighbor_delta), num(c.observations[0].max_temp), c.flagged_count, c.observation_count,
+  const lines = [['인버터', '접속반', '스트링', '모듈', '모듈 판정', '판정 사유', '관측 판정', '주변 대비(℃)', '최고 온도(℃)', '후보 횟수', '관측 횟수', '판정 근거', '형상', '그림자 의심', '상태', '현장 확인 원인', '조치', '확인자·메모']];
+  orderRows().forEach(({ c, o }) => lines.push([c.inverter, c.jb, c.string, c.id, VERDICT[c.verdict || 'inspect'][0], c.verdict_reason || '', FINAL[c.final][0], num(c.max_neighbor_delta), num(c.observations[0].max_temp), c.flagged_count, c.observation_count,
     c.observations[0].reasons.map(r => REASON[r]).join(' / ') || '분류 모델', TYPE[c.type] || '', c.shadow ? (SHADOW_REVIEW[state.reviews[c.id]] || ['확인 필요'])[0] : '', o.status, o.cause, o.action, o.memo]));
   // BOM so Excel opens the Korean text as UTF-8.
   const url = URL.createObjectURL(new Blob(['﻿' + lines.map(line => line.map(quote).join(',')).join('\r\n')], { type: 'text/csv' }));
@@ -525,6 +532,7 @@ document.addEventListener('click', event => {
   if (act === 'mapzoom') return map?.zoom(Number(id));
   if (act === 'csv') return exportCsv();
   if (act === 'print') return print();
+  if (act === 'string') { state.query = id; state.filter = 'all'; map?.fit(M.string.flatMap((s, i) => M.strings[s][0] === id ? [i] : [])); }
   if (act === 'inverter') {
     state.query = id; state.filter = 'all';
     map?.fit(M.string.flatMap((s, i) => M.strings[s][2] === id ? [i] : []));
@@ -538,7 +546,7 @@ document.addEventListener('click', event => {
   if (act === 'lightbox') state.lightbox = !state.lightbox;
   if (act === 'pick') { toggleOrder([id]); toast(state.orders[id] ? '점검 목록에 담았습니다.' : '점검 목록에서 뺐습니다.'); }
   if (act === 'pick-string') { const ids = S.candidates.filter(c => c.string === id).map(c => c.id); toggleOrder(ids, true); toast(`${id} 후보 ${ids.length}건을 담았습니다.`); }
-  if (act === 'pick-final') { const ids = S.candidates.filter(c => id === 'all' || c.final === id).map(c => c.id); toggleOrder(ids, true); toast(`${ids.length}건을 담았습니다.`); }
+  if (act === 'pick-final') { const ids = S.candidates.filter(c => id === 'all' || (c.verdict || 'inspect') === id).map(c => c.id); toggleOrder(ids, true); toast(`${ids.length}건을 담았습니다.`); }
   if (act === 'clear') { if (!confirm('점검 목록과 입력한 현장 결과를 모두 지울까요?')) return; state.orders = {}; saveOrders(); }
   render();
 });

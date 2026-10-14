@@ -13,6 +13,8 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parent
 RANK = {'abnormal': 2, 'attention': 1, 'normal': 0}
 RGB_SIZE = (4032, 3024)
+VERDICT_STATE = {'normal': 1, 'recheck': 2, 'inspect': 3}  # map.js state: 0 unobserved
+VERDICT_RANK = {'inspect': 2, 'recheck': 1, 'normal': 0}
 MASTER_COLUMNS = ['image_id', 'final', 'hs_is_hotspot', 'neighbor_flag', 'structure_status', 'capture_condition',
                   'camera_to_surface_m', 'gsd_x_m_per_px', 'irradiance_w_m2']
 
@@ -52,7 +54,7 @@ def site_map(cables, modules):
     for row in modules.to_dict('records'):
         i = index.get(row['drawing_module_id'])
         if i is not None:
-            state[i] = str(RANK.get(row['worst_final'], 0) + 1)
+            state[i] = str(VERDICT_STATE.get(row.get('verdict'), 1))
             if not pd.isna(row['max_neighbor_delta']):
                 delta[i] = round(row['max_neighbor_delta'], 2)
     return {'ids': catalog['module_id'].tolist(), 'x': catalog['east_m'].round(2).tolist(), 'y': catalog['north_m'].round(2).tolist(),
@@ -136,6 +138,7 @@ def main():
     parser.add_argument('--output', default='web/data')
     parser.add_argument('--alignment', default='results/ir_rgb_alignment/alignment.json')
     parser.add_argument('--patterns', default='results/anomaly_patterns/anomaly_patterns.csv')
+    parser.add_argument('--verdicts', default='results/module_verdicts')
     args = parser.parse_args()
     alignment_path = ROOT / args.alignment
     alignment = json.loads(alignment_path.read_text(encoding='utf-8')) if alignment_path.is_file() else None
@@ -163,7 +166,20 @@ def main():
     string_summary = pd.read_csv(registration / 'string_summary.csv', encoding='utf-8-sig')
     frame_registration = pd.read_csv(registration / 'frame_registration.csv', encoding='utf-8-sig')
 
-    flagged = modules[modules['flagged_observations'] > 0]
+    # Module verdicts from repeated views (judge_modules.py); without them every flagged module is a candidate.
+    verdict_dir = ROOT / args.verdicts
+    string_verdicts = pd.DataFrame(columns=['string_id', 'string_delta', 'string_flag'])
+    if (verdict_dir / 'module_verdicts.csv').is_file():
+        verdicts = pd.read_csv(verdict_dir / 'module_verdicts.csv', encoding='utf-8-sig')
+        modules = modules.merge(verdicts[['drawing_module_id', 'verdict', 'verdict_reason', 'usable_views', 'flagged_votes',
+                                          'wide_delta', 'wide_neighbours']], on='drawing_module_id', how='left')
+        string_verdicts = pd.read_csv(verdict_dir / 'string_verdicts.csv', encoding='utf-8-sig')
+    else:
+        modules['verdict'] = np.where(modules['flagged_observations'] > 0, 'inspect', 'normal')
+        modules['verdict_reason'] = ''
+    modules['verdict'] = modules['verdict'].fillna('normal')
+    string_summary = string_summary.merge(string_verdicts[['string_id', 'string_delta', 'string_flag']], on='string_id', how='left')
+    flagged = modules[modules['verdict'] != 'normal']
     inverters = {}
     for item in strings:
         jb = inverters.setdefault(item['inverter'], {}).setdefault(item['jb'], {'id': item['jb'], 'strings': 0, 'modules': 0})
@@ -171,7 +187,7 @@ def main():
         jb['modules'] += len(item['modules'])
     observed = modules.groupby('jb_id').size()
     flagged_count = flagged.groupby('jb_id').size()
-    abnormal = modules[modules['worst_final'] == 'abnormal'].groupby('jb_id').size()
+    abnormal = modules[modules['verdict'] == 'inspect'].groupby('jb_id').size()
     for jbs in inverters.values():
         for jb in jbs.values():
             jb.update(observed=int(observed.get(jb['id'], 0)), flagged=int(flagged_count.get(jb['id'], 0)),
@@ -224,8 +240,11 @@ def main():
                            'observation_count': int(row['observations']), 'flagged_count': int(row['flagged_observations']),
                            'repeatability': clean(row['repeatability']), 'max_delta_temp': clean(row['max_delta_temp']),
                            'max_neighbor_delta': clean(row['max_neighbor_delta']), 'observations': observations,
+                           'verdict': row['verdict'], 'verdict_reason': row.get('verdict_reason') if isinstance(row.get('verdict_reason'), str) else '',
+                           'usable_views': clean(row.get('usable_views')), 'flagged_votes': clean(row.get('flagged_votes')),
+                           'wide_delta': clean(row.get('wide_delta')), 'wide_neighbours': clean(row.get('wide_neighbours')),
                            **module_pattern(observations)})
-    candidates.sort(key=lambda c: (-RANK.get(c['final'], 0), -(c['max_neighbor_delta'] or -99)))
+    candidates.sort(key=lambda c: (-VERDICT_RANK.get(c['verdict'], 0), -RANK.get(c['final'], 0), -(c['max_neighbor_delta'] or -99)))
 
     link_counts = linked['link_status'].value_counts()
     matched = int(link_counts.drop('unmatched', errors='ignore').sum())
@@ -256,6 +275,9 @@ def main():
         'candidates': candidates,
         'rgb_alignment': {k: alignment[k] for k in ('scale_rgb_px_per_thermal_px', 'frames_sampled', 'frames_voting',
                                                     'offset_from_fixed_px_median', 'offset_from_fixed_px_p90')} if alignment else None,
+        'verdicts': modules['verdict'].value_counts().to_dict(),
+        'strings_flagged': [{k: clean(v) for k, v in row.items()} for row in string_summary[string_summary['string_flag'] == True][
+            ['inverter_id', 'jb_id', 'string_id', 'string_delta', 'modules_observed']].to_dict('records')],
         'pattern_types': pd.Series([c.get('type') for c in candidates if c.get('type')]).value_counts().to_dict() if candidates else {},
         'diagnoses': [],
         'work_orders': [],
