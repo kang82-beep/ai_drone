@@ -5,7 +5,7 @@ costs one chunk, not the flight. Cross-frame links are not made across chunk
 boundaries; provisional module_uid values are prefixed with the chunk number.
 """
 from pathlib import Path
-import argparse, json, os, re, subprocess, sys, time
+import argparse, json, os, re, shutil, subprocess, sys, time
 from concurrent.futures import ThreadPoolExecutor
 import pandas as pd
 
@@ -17,7 +17,10 @@ def link_chunk(files, folder):
     for source in files:
         target = folder / source.name
         if not target.exists():
-            os.link(source, target)
+            try:
+                os.link(source, target)
+            except OSError:  # images on another drive cannot be hard-linked
+                shutil.copy2(source, target)
 
 
 def run_chunk(index, files, base, output, threads):
@@ -77,9 +80,16 @@ def main():
     parser.add_argument('--chunk-size', type=int, default=100)
     parser.add_argument('--workers', type=int, default=3)
     parser.add_argument('--threads', type=int, default=4)
+    parser.add_argument('--from-chunk', type=int, default=0,
+                        help='Skip earlier chunks, e.g. when they were analysed on another PC (see make_transfer_package.py)')
     args = parser.parse_args()
+    if os.name == 'nt':
+        # ES_CONTINUOUS | ES_SYSTEM_REQUIRED: idle sleep would stall a chunk for hours.
+        import ctypes
+        ctypes.windll.kernel32.SetThreadExecutionState(0x80000001)
     base = json.loads(Path(args.config).read_text(encoding='utf-8-sig'))
     output = Path(args.output).resolve()
+    output.mkdir(parents=True, exist_ok=True)
     captures = {}
     for path in sorted(Path(args.input).iterdir()):
         match = re.fullmatch(r'DJI_\d{14}_(\d+)_[TV]\.JPE?G', path.name, re.IGNORECASE)
@@ -88,8 +98,9 @@ def main():
     keys = sorted(k for k, v in captures.items() if any(p.stem.upper().endswith('_T') for p in v))
     chunks = [[p for k in keys[i:i + args.chunk_size] for p in captures[k]] for i in range(0, len(keys), args.chunk_size)]
     print(f'열화상 {len(keys)}장, {len(chunks)}개 묶음', flush=True)
+    todo = [(i, files) for i, files in enumerate(chunks) if i >= args.from_chunk]
     with ThreadPoolExecutor(args.workers) as pool:
-        for index, status in pool.map(lambda item: run_chunk(item[0], item[1], base, output, args.threads), enumerate(chunks)):
+        for index, status in pool.map(lambda item: run_chunk(item[0], item[1], base, output, args.threads), todo):
             print(f'[{index + 1}/{len(chunks)}] {status}', flush=True)
     merged, images = merge(output)
     summary = {'thermal_images_input': len(keys), 'thermal_images_analysed': images,
