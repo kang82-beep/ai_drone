@@ -62,14 +62,22 @@ class GeoTransform:
         self.origin = ll.mean(axis=0)
         self.scale = np.array([110950.0, 111320.0 * math.cos(math.radians(self.origin[0]))])
         self.params = _similarity(self.local(ll), np.array([[m['x'], m['n']] for m in reference], float))
+        self.centre = np.array([[m['x'], m['n']] for m in reference], float).mean(axis=0)
         self.shift = np.zeros(2)
+        # Correction that grows linearly across the site: the map alignment carries a
+        # small scale/rotation error that one shift cannot absorb over a whole flight.
+        self.gradient = np.zeros((2, 2))
 
     def local(self, latlon):
         d = (np.asarray(latlon, float) - self.origin) * self.scale
         return np.column_stack((d[:, 1], d[:, 0]))
 
+    def base(self, latlon):
+        return _apply(self.params, self.local(latlon))
+
     def __call__(self, latlon):
-        return _apply(self.params, self.local(latlon)) + self.shift
+        p = self.base(latlon)
+        return p + self.shift + (p - self.centre) @ self.gradient.T
 
 
 def fit_frame(points, tree, xy, max_shift=FRAME_SHIFT_MAX_M):
@@ -99,6 +107,36 @@ def fit_frame(points, tree, xy, max_shift=FRAME_SHIFT_MAX_M):
                 shift=(float(params[2]), float(params[3])))
 
 
+def refine_correction(transform, frames, tree, xy, rounds=8):
+    """Fit shift + linear gradient to the shifts of well-supported frames.
+
+    Frames far from where the map alignment is good start outside the shift bound,
+    so the correction is grown over several rounds from the frames that already fit.
+    """
+    for _ in range(rounds):
+        centres, shifts = [], []
+        for latlon in frames:
+            fit = fit_frame(transform(latlon), tree, xy)
+            if fit and (fit['distance'] <= MODULE_MATCH_M).mean() >= 0.6:
+                centres.append(transform.base(latlon).mean(axis=0) - transform.centre)
+                shifts.append(fit['shift'])
+        if not shifts:
+            return
+        centres, shifts = np.array(centres), np.array(shifts)
+        spread = np.ptp(centres, axis=0) if len(centres) > 1 else np.zeros(2)
+        if len(shifts) < 20 or spread.min() < 30:
+            transform.shift += np.median(shifts, axis=0)
+            continue
+        design = np.column_stack((centres, np.ones(len(centres))))
+        keep = np.ones(len(shifts), bool)
+        for _ in range(2):  # drop frames that snapped onto a neighbouring row
+            coef = np.linalg.lstsq(design[keep], shifts[keep], rcond=None)[0]
+            residual = np.hypot(*(design @ coef - shifts).T)
+            keep = residual <= max(0.15, 2.5 * np.median(residual[keep]))
+        transform.gradient += coef[:2].T
+        transform.shift += coef[2]
+
+
 def _score(frames, transform, tree, xy, offset=(0.0, 0.0)):
     inliers = total = 0
     for latlon in frames:
@@ -119,11 +157,7 @@ def register(master, site, reference, pitch=(1.008, 5.82)):
     groups = {k: g.index.to_numpy() for k, g in work[usable].groupby('image_id', sort=True)}
     frames = [work.loc[i, ['mod_lat', 'mod_lon']].to_numpy(float) for i in groups.values()]
     # Centre on the nearest self-consistent position, then test whole-pitch alternatives.
-    for _ in range(4):
-        shifts = [f['shift'] for f in (fit_frame(transform(ll), tree, xy) for ll in frames) if f]
-        if not shifts:
-            break
-        transform.shift += np.median(np.array(shifts), axis=0)
+    refine_correction(transform, frames, tree, xy)
     hypotheses = []
     for kx in range(-3, 4):
         for kn in (-1, 0, 1):
@@ -187,6 +221,7 @@ def register(master, site, reference, pitch=(1.008, 5.82)):
         drawing_modules=len(site), drawing_modules_observed=int(linked.drawing_module_id.nunique()),
         strings_observed=int(linked.string_id.nunique()), strings_total=int(site.string_id.nunique()),
         global_shift_from_map_alignment_m=transform.shift.round(3).tolist(),
+        correction_gradient_m_per_100m=(transform.gradient * 100).round(3).tolist(),
         whole_pitch_test=dict(resolved=bool(resolved), best=best, runner_up=hypotheses[1], margin=margin,
                               observations_deciding=int(round(margin * total)), alternatives=hypotheses[:6],
                               note='차이가 작으면 모듈 한 칸 어긋남을 배제할 수 없습니다.'),

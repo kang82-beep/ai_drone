@@ -134,7 +134,7 @@ def module_pattern(observations):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--analysis', default='results/shinan3_full_20261030')
-    parser.add_argument('--registration', default='tmp/partial/reg')
+    parser.add_argument('--registration', default='results/shinan3_full_20261030/reg')
     parser.add_argument('--output', default='web/data')
     parser.add_argument('--alignment', default='results/ir_rgb_alignment/alignment.json')
     parser.add_argument('--patterns', default='results/anomaly_patterns/anomaly_patterns.csv')

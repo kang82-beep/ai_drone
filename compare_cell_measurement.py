@@ -63,7 +63,7 @@ def decide(prob, delta_temp, hotspot, neighbor_flag):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--linked', default='tmp/partial/reg/master_linked.csv')
+    parser.add_argument('--linked', default='results/shinan3_full_20261030/reg/master_linked.csv')
     parser.add_argument('--catalog', default='shinan3_viewer/assets/module_catalog.csv')
     parser.add_argument('--weights', default='model/classifier_b3_2025_1013.pth')
     parser.add_argument('--output', default='results/cell_measurement')

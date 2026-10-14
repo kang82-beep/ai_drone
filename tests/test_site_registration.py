@@ -69,6 +69,27 @@ class SiteRegistrationTests(unittest.TestCase):
         self.assertTrue(report['whole_pitch_test']['resolved'])
         self.assertGreater((linked.drawing_module_id == linked.truth).mean(), 0.99)
 
+    def test_offset_growing_across_the_site_is_absorbed(self):
+        # A map alignment with a small rotation/scale error: the offset drifts by
+        # more than a module over the site, beyond what one shift can absorb.
+        site = make_site(rows=24, columns=80)
+        rng = np.random.default_rng(3)
+        rows = []
+        for fx in range(0, 70, 6):
+            for fn in range(0, 60, 8):
+                seen = site[(site.x.between(fx, fx + 14)) & (site.n.between(fn, fn + 14))]
+                if len(seen) < 8:
+                    continue
+                for _, m in seen.iterrows():
+                    drift = np.array([0.006 * m.n, 0.02 * m.x - 0.4])
+                    lat, lon = latlon(*(np.array([m.x, m.n]) + drift + rng.normal(0, 0.04, 2)))
+                    rows.append(dict(image_id=f'F{fx:02}{fn:02}', mod_lat=lat, mod_lon=lon,
+                                     truth=m.drawing_module_id, final='normal', delta_temp=1.0))
+        work, frames, _ = register(pd.DataFrame(rows), site, reference(site))
+        self.assertGreater((frames.status == 'registered').mean(), 0.9)
+        linked = work[work.drawing_module_id.notna()]
+        self.assertGreater((linked.drawing_module_id == linked.truth).mean(), 0.99)
+
     def test_periodic_interior_is_reported_unresolved(self):
         site = make_site()
         interior = site[site.x.between(12, 30)]

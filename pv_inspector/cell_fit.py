@@ -35,23 +35,50 @@ def _mask(shape, polygon):
     return mask.astype(bool)
 
 
+def _window_mask(polygon, window, shape):
+    """Polygon rasterised as _mask does, but only inside window (x0, y0, x1, y1) of the frame."""
+    x0, y0, x1, y1 = window
+    points = np.round(np.asarray(polygon, float)).astype(np.int32) - (x0, y0)
+    mask = np.zeros((y1 - y0, x1 - x0), np.uint8)
+    cv2.fillPoly(mask, [points], 1)
+    return mask.astype(bool)
+
+
+def _bounds(polygon, shape):
+    """Frame-clipped pixel window that holds every pixel of the rasterised polygon."""
+    points = np.round(np.asarray(polygon, float)).astype(int)
+    height, width = shape
+    return (min(max(points[:, 0].min(), 0), width), min(max(points[:, 1].min(), 0), height),
+            min(max(points[:, 0].max() + 1, 0), width), min(max(points[:, 1].max() + 1, 0), height))
+
+
 def fit(box, cell_polygon, frame_cells, structure_status=None, on_drawing=True, shape=(1024, 1280)):
-    """Return (fit label, IoU with own cell or None) for one detection box (x1, y1, x2, y2)."""
+    """Return (fit label, IoU with own cell or None) for one detection box (x1, y1, x2, y2).
+
+    Masks are drawn only in the window around the box and cell: a full-frame mask per
+    cell made a whole flight (77 k views x ~80 cells) take hours.
+    """
     x1, y1, x2, y2 = (int(round(v)) for v in box)
-    box_mask = np.zeros(shape, bool)
-    box_mask[max(0, y1):y2, max(0, x1):x2] = True
+    height, width = shape
+    bx = (min(max(x1, 0), width), min(max(y1, 0), height), min(max(x2, 0), width), min(max(y2, 0), height))
+    box_area = max(bx[2] - bx[0], 0) * max(bx[3] - bx[1], 0)
     if cell_polygon is not None:
-        cell = _mask(shape, cell_polygon)
-        union = (box_mask | cell).sum()
-        iou = float((box_mask & cell).sum() / union) if union else 0.0
+        cb = _bounds(cell_polygon, shape)
+        window = (min(bx[0], cb[0]), min(bx[1], cb[1]), max(bx[2], cb[2]), max(bx[3], cb[3]))
+        cell = _window_mask(cell_polygon, window, shape)
+        inside = cell[bx[1] - window[1]:bx[3] - window[1], bx[0] - window[0]:bx[2] - window[0]].sum()
+        union = box_area + cell.sum() - inside
+        iou = float(inside / union) if union else 0.0
         return ('aligned' if iou >= ALIGNED_IOU else 'shifted'), round(iou, 3)
     covered = 0
     touched = False
     for polygon in frame_cells:
-        cell = _mask(shape, polygon)
-        overlap = (box_mask & cell).sum()
+        cb = _bounds(polygon, shape)
+        if box_area == 0 or cb[0] >= bx[2] or cb[2] <= bx[0] or cb[1] >= bx[3] or cb[3] <= bx[1]:
+            continue  # no shared pixel: neither touches nor covers
+        overlap = _window_mask(polygon, bx, shape).sum()
         touched |= overlap > 0
-        if overlap >= STRADDLE_SHARE * cell.sum():
+        if overlap >= STRADDLE_SHARE * _window_mask(polygon, cb, shape).sum():
             covered += 1
     if covered >= 2:
         return 'straddle', None

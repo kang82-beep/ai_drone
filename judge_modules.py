@@ -16,7 +16,7 @@ def local(path):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--linked', default='tmp/partial/reg/master_linked.csv')
+    parser.add_argument('--linked', default='results/shinan3_full_20261030/reg/master_linked.csv')
     parser.add_argument('--catalog', default='shinan3_viewer/assets/module_catalog.csv')
     parser.add_argument('--output', default='results/module_verdicts')
     args = parser.parse_args()

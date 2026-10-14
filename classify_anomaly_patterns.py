@@ -35,7 +35,7 @@ def refined_outline(row, cache):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--master', default='tmp/partial/reg/master_linked.csv')
+    parser.add_argument('--master', default='results/shinan3_full_20261030/reg/master_linked.csv')
     parser.add_argument('--module-column', default='drawing_module_id')
     parser.add_argument('--alignment', default='results/ir_rgb_alignment/alignment.json')
     parser.add_argument('--no-rgb', action='store_true')
