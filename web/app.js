@@ -287,7 +287,7 @@ function candidatePanel(candidate) {
     <section><div class="between"><h3>${icon('bot')}AI 원인 추정</h3>${chip('연결 전')}</div>
       <p class="sub">원인 추정 에이전트가 연결되면 원인 후보·근거·권장 조치가 여기에 나옵니다. 지금은 에이전트에 넘길 증거 묶음만 보여 줍니다.</p>
       ${evidence(candidate, o)}
-      <details class="kb"><summary>원인 판단 기준표 (기획서 3.5절)</summary><ul>${KNOWLEDGE.map(([seen, why, act]) => `<li><b>${seen}</b><br>${why} → ${act}</li>`).join('')}</ul></details></section>
+      <details class="kb"><summary>원인 판단 기준표 (기획서 4.4절)</summary><ul>${KNOWLEDGE.map(([seen, why, act]) => `<li><b>${seen}</b><br>${why} → ${act}</li>`).join('')}</ul></details></section>
   </div>`;
 }
 
@@ -419,7 +419,7 @@ function orders() {
       : empty('inbox', '점검 목록이 비어 있습니다', '현황 화면에서 이상 후보를 살펴보고 “점검 목록에 담기”를 누르거나, 위 버튼으로 한 번에 담으세요.')}
   </div>
   <div class="stack noprint">
-    <div class="card"><div class="head"><h2>${icon('flow')}환류 지표</h2><span class="sub">기획서 7절</span></div>
+    <div class="card"><div class="head"><h2>${icon('flow')}환류 지표</h2><span class="sub">기획서 8절</span></div>
       <div class="stats two">
         ${metric('오경보율', judged.length ? num(pct(falseAlarms, judged.length), 0) + '%' : '측정 전', judged.length ? `결과 입력 ${judged.length}건 중 이상 없음 ${falseAlarms}건` : '현장 결과를 입력하면 계산됩니다', judged.length ? 't-pri' : 't-mute')}
         ${metric('미검출률', '측정 전', '정상 판정 모듈의 표본 검수가 필요합니다')}

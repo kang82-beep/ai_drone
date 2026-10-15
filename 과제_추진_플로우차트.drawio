@@ -1,192 +1,251 @@
 <mxfile host="app.diagrams.net" version="24.7.17">
   <diagram id="pv-drone-system" name="목표 시스템 흐름">
-    <mxGraphModel dx="1500" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1280" pageHeight="1200" math="0" shadow="0">
+    <mxGraphModel dx="1500" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1280" pageHeight="1500" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-
-        <mxCell id="title" value="드론 열화상 기반 태양광 점검 자동화 — 목표 시스템 흐름 (촬영 → 자동 분석 → 이상 탐지 → AI 원인 추정 → 점검 생성 → 환류)" style="text;html=1;align=left;verticalAlign=middle;fontSize=17;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="40" y="20" width="1160" height="30" as="geometry" />
+        <mxCell id="title" value="드론 열화상 기반 태양광 점검 자동화 — 목표 시스템 흐름 (현장 준비 → 촬영 → 자동 분석·주소 연결 → 이상 탐지 → AI 원인 추정 → 점검 생성 → 환류)" style="text;html=1;align=left;verticalAlign=middle;fontSize=17;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1200" height="30" as="geometry" />
         </mxCell>
 
-        <!-- A. 촬영·수집 -->
-        <mxCell id="LA" value="① 촬영·수집" style="swimlane;horizontal=0;startSize=40;html=1;fontSize=14;fontStyle=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="40" y="70" width="1160" height="170" as="geometry" />
+        <mxCell id="L0" value="⓪ 현장 준비" style="swimlane;horizontal=0;startSize=40;html=1;fontSize=14;fontStyle=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="70" width="1160" height="140" as="geometry" />
         </mxCell>
-        <mxCell id="A1" value="촬영 계획·조건 확인&lt;br&gt;(일사 600W/m² 이상, 비행 중 일정 가정)&lt;br&gt;&lt;i&gt;규칙 · 신규&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="LA">
-          <mxGeometry x="60" y="40" width="210" height="70" as="geometry" />
+        <mxCell id="P1" value="준공도면 추출&lt;br&gt;모듈 배치·스트링·접속반·인버터 결선&lt;br&gt;&lt;i&gt;규칙 · 구현됨&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="L0">
+          <mxGeometry x="60" y="35" width="200" height="75" as="geometry" />
         </mxCell>
-        <mxCell id="A2" value="드론 촬영&lt;br&gt;열화상 + 가시광 + RTK 위치" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="LA">
-          <mxGeometry x="310" y="40" width="180" height="70" as="geometry" />
+        <mxCell id="P2" value="도면–지도 정합&lt;br&gt;위경도 초기값&lt;br&gt;&lt;i&gt;영상 정합 · 구현됨&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="L0">
+          <mxGeometry x="290" y="35" width="190" height="75" as="geometry" />
         </mxCell>
-        <mxCell id="A3" value="자동 수집·메타데이터 추출&lt;br&gt;일사계·기상 기록 결합&lt;br&gt;&lt;i&gt;규칙 · 일부 구현&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="LA">
-          <mxGeometry x="530" y="40" width="200" height="70" as="geometry" />
+        <mxCell id="P3" value="카메라 보정&lt;br&gt;패널 높이·짐벌 방향·촬영 지연·옆 치우침&lt;br&gt;&lt;i&gt;규칙 · 구현됨 (바뀔 때 다시)&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="L0">
+          <mxGeometry x="510" y="35" width="230" height="75" as="geometry" />
         </mxCell>
-        <mxCell id="dA" value="촬영 품질&lt;br&gt;적합?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="LA">
-          <mxGeometry x="775" y="30" width="130" height="90" as="geometry" />
+        <mxCell id="P4" value="측량 기준점 측정&lt;br&gt;배열 모서리·도로 경계&lt;br&gt;→ 주소 정확도 검증" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="L0">
+          <mxGeometry x="770" y="35" width="180" height="75" as="geometry" />
         </mxCell>
-        <mxCell id="A4" value="판독 보류&lt;br&gt;재촬영 요청" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="LA">
-          <mxGeometry x="960" y="45" width="160" height="60" as="geometry" />
-        </mxCell>
-
-        <!-- B. 자동 분석 -->
-        <mxCell id="LB" value="② 자동 분석" style="swimlane;horizontal=0;startSize=40;html=1;fontSize=14;fontStyle=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="40" y="240" width="1160" height="150" as="geometry" />
-        </mxCell>
-        <mxCell id="B1" value="방사온도 추출&lt;br&gt;&lt;i&gt;DJI SDK · 구현됨&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="LB">
-          <mxGeometry x="60" y="40" width="160" height="65" as="geometry" />
-        </mxCell>
-        <mxCell id="B2" value="모듈 검출·분할&lt;br&gt;&lt;i&gt;딥러닝(인스턴스 분할) · 구현됨&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="LB">
-          <mxGeometry x="250" y="40" width="200" height="65" as="geometry" />
-        </mxCell>
-        <mxCell id="B3" value="열화상–가시광 정합&lt;br&gt;&lt;i&gt;영상 정합·딥러닝 매칭 · 신규&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="LB">
-          <mxGeometry x="480" y="40" width="200" height="65" as="geometry" />
-        </mxCell>
-        <mxCell id="B4" value="설비 주소 연결&lt;br&gt;모듈·스트링·접속반·인버터&lt;br&gt;&lt;i&gt;RTK+도면 정합 · 구현됨(검증 전)&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="LB">
-          <mxGeometry x="710" y="35" width="210" height="75" as="geometry" />
-        </mxCell>
-        <mxCell id="B5" value="다중 촬영 통합&lt;br&gt;(모듈당 1건, 반사 제거)&lt;br&gt;&lt;i&gt;규칙 · 일부 구현&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="LB">
-          <mxGeometry x="950" y="35" width="180" height="75" as="geometry" />
+        <mxCell id="P5" value="판정 기준·지식베이스 합의&lt;br&gt;→ ③ 임계값, ④ 기준표" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="L0">
+          <mxGeometry x="980" y="35" width="160" height="75" as="geometry" />
         </mxCell>
 
-        <!-- C. 이상 탐지 -->
-        <mxCell id="LC" value="③ 이상 모듈 탐지" style="swimlane;horizontal=0;startSize=40;html=1;fontSize=14;fontStyle=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="40" y="390" width="1160" height="200" as="geometry" />
+        <mxCell id="L1" value="① 촬영·수집" style="swimlane;horizontal=0;startSize=40;html=1;fontSize=14;fontStyle=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="210" width="1160" height="150" as="geometry" />
         </mxCell>
-        <mxCell id="C1" value="온도 특징 계산&lt;br&gt;주변 대비 ΔT + 스트링·접속반·&lt;br&gt;인버터 단위 비교&lt;br&gt;&lt;i&gt;규칙 · 일부 구현&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="LC">
-          <mxGeometry x="60" y="30" width="200" height="80" as="geometry" />
+        <mxCell id="A1" value="촬영 계획&lt;br&gt;고도 30m·수직·겹침 70%·3m/s,&lt;br&gt;일사 600W/m² 이상 시간대&lt;br&gt;&lt;i&gt;규칙 · 신규&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="L1">
+          <mxGeometry x="60" y="30" width="220" height="85" as="geometry" />
         </mxCell>
-        <mxCell id="C2" value="이상 탐지&lt;br&gt;온도 규칙 + 분류 모델 + 비지도 이상탐지&lt;br&gt;&lt;i&gt;딥러닝 · 일부 구현&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="LC">
-          <mxGeometry x="300" y="30" width="230" height="80" as="geometry" />
+        <mxCell id="A2" value="드론 촬영&lt;br&gt;열화상 + 가시광 + RTK" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="L1">
+          <mxGeometry x="310" y="42" width="160" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="dC" value="이상 후보?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="LC">
-          <mxGeometry x="585" y="25" width="130" height="90" as="geometry" />
+        <mxCell id="A3" value="자동 수집·메타데이터 추출&lt;br&gt;일사계·기상 기록 결합&lt;br&gt;&lt;i&gt;규칙 · 일부 구현&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="L1">
+          <mxGeometry x="500" y="37" width="200" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="C3" value="이상 유형 분류&lt;br&gt;셀 핫스팟·다이오드·모듈 전체·&lt;br&gt;스트링 전체·PID·접속부&lt;br&gt;&lt;i&gt;딥러닝 + 형상 규칙 · 신규&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="LC">
-          <mxGeometry x="780" y="25" width="230" height="90" as="geometry" />
+        <mxCell id="dA" value="촬영 조건&lt;br&gt;적합?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="L1">
+          <mxGeometry x="730" y="27" width="130" height="90" as="geometry" />
         </mxCell>
-        <mxCell id="C4" value="정상 기록·이력 저장" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="LC">
-          <mxGeometry x="565" y="140" width="170" height="45" as="geometry" />
+        <mxCell id="A4" value="판독 보류 · 재촬영 요청&lt;br&gt;(조건 미달, 찍히지 않은 구역)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="L1">
+          <mxGeometry x="900" y="42" width="230" height="60" as="geometry" />
         </mxCell>
 
-        <!-- D. 원인 추정 -->
-        <mxCell id="LD" value="④ AI 원인 추정" style="swimlane;horizontal=0;startSize=40;html=1;fontSize=14;fontStyle=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="40" y="590" width="1160" height="220" as="geometry" />
+        <mxCell id="L2" value="② 자동 분석·주소 연결" style="swimlane;horizontal=0;startSize=40;html=1;fontSize=14;fontStyle=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="360" width="1160" height="260" as="geometry" />
         </mxCell>
-        <mxCell id="D1" value="증거 수집&lt;br&gt;가시광 외관(오염·풀·그림자·파손),&lt;br&gt;여러 프레임 재현 여부, 과거 회차&lt;br&gt;&lt;i&gt;딥러닝 + 데이터 연동 · 신규&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="LD">
+        <mxCell id="B1" value="방사온도 추출&lt;br&gt;&lt;i&gt;DJI SDK · 구현됨&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="L2">
+          <mxGeometry x="60" y="25" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="B2" value="모듈 검출·분할&lt;br&gt;&lt;i&gt;딥러닝 · 구현됨&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="L2">
+          <mxGeometry x="235" y="25" width="170" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="B3" value="검출 품질 보강&lt;br&gt;2단 배열 필터·배열 기준 분리·빈칸 재검사&lt;br&gt;&lt;i&gt;규칙 · 구현됨&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="L2">
+          <mxGeometry x="430" y="25" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="B4" value="위치 투영&lt;br&gt;카메라 자세 + 보정값&lt;br&gt;&lt;i&gt;규칙 · 구현됨&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="L2">
+          <mxGeometry x="655" y="25" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="B5" value="연속 영상 이동 측정&lt;br&gt;겹친 부분 위상 상관 (GPS와 독립)&lt;br&gt;&lt;i&gt;영상 정합 · 구현됨&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="L2">
+          <mxGeometry x="880" y="25" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="B6" value="비행 줄 연결 · 줄 위치 결정&lt;br&gt;도로 틈·배열 끝 + 줄 추세&lt;br&gt;&lt;i&gt;규칙 · 구현됨&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="L2">
+          <mxGeometry x="60" y="150" width="210" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="B7" value="설비 주소 연결&lt;br&gt;모듈·스트링·접속반·인버터,&lt;br&gt;경사 패널 높이 보정&lt;br&gt;&lt;i&gt;도면 정합 · 구현됨(측량 전)&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="L2">
+          <mxGeometry x="295" y="150" width="230" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="B8" value="도면·범위 점검&lt;br&gt;시공 차이, 찍히지 않은 모듈&lt;br&gt;→ 도면 수정·재촬영 구역&lt;br&gt;&lt;i&gt;규칙 · 구현됨&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="L2">
+          <mxGeometry x="550" y="150" width="170" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="B9" value="열화상–가시광 정합&lt;br&gt;&lt;i&gt;영상 정합 · 일부 구현&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="L2">
+          <mxGeometry x="745" y="150" width="170" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="B10" value="다중 촬영 통합&lt;br&gt;모듈당 1건, 다수결,&lt;br&gt;가장자리 관측 제외&lt;br&gt;&lt;i&gt;영상 정합 + 규칙 · 구현됨&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="L2">
+          <mxGeometry x="940" y="150" width="190" height="85" as="geometry" />
+        </mxCell>
+
+        <mxCell id="L3" value="③ 이상 모듈 탐지" style="swimlane;horizontal=0;startSize=40;html=1;fontSize=14;fontStyle=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="620" width="1160" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="C1" value="온도 특징 계산&lt;br&gt;주변 대비 ΔT, 셀 단위 재측정,&lt;br&gt;스트링·접속반·인버터 비교&lt;br&gt;&lt;i&gt;규칙 · 일부 구현&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="L3">
+          <mxGeometry x="60" y="30" width="210" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="C2" value="이상 탐지&lt;br&gt;온도 규칙 + 분류 모델 + 비지도 이상탐지&lt;br&gt;&lt;i&gt;딥러닝 · 일부 구현&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="L3">
+          <mxGeometry x="300" y="30" width="230" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="dC" value="이상 후보?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="L3">
+          <mxGeometry x="585" y="27" width="130" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="C3" value="이상 유형 분류&lt;br&gt;셀 핫스팟·다이오드·모듈 전체·&lt;br&gt;스트링 전체·PID·접속부&lt;br&gt;&lt;i&gt;딥러닝 + 형상 규칙 · 일부 구현&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="L3">
+          <mxGeometry x="770" y="27" width="240" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="C4" value="정상 기록·이력 저장&lt;br&gt;(일사 미달은 판독 보류)" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="L3">
+          <mxGeometry x="550" y="145" width="200" height="45" as="geometry" />
+        </mxCell>
+
+        <mxCell id="L4" value="④ AI 원인 추정" style="swimlane;horizontal=0;startSize=40;html=1;fontSize=14;fontStyle=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="820" width="1160" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="D1" value="증거 수집&lt;br&gt;가시광 외관(오염·풀·그림자·파손),&lt;br&gt;여러 프레임 재현 여부, 과거 회차&lt;br&gt;&lt;i&gt;딥러닝 + 데이터 연동 · 신규&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="L4">
           <mxGeometry x="60" y="25" width="240" height="90" as="geometry" />
         </mxCell>
-        <mxCell id="D2" value="원인 추정 에이전트&lt;br&gt;멀티모달 LLM + 진단 지식베이스&lt;br&gt;원인 후보·근거·불확실성 작성&lt;br&gt;&lt;i&gt;에이전트 · 신규&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="LD">
+        <mxCell id="D2" value="원인 추정 에이전트&lt;br&gt;멀티모달 LLM + 진단 지식베이스&lt;br&gt;원인 후보·근거·불확실성 작성&lt;br&gt;&lt;i&gt;에이전트 · 신규&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="L4">
           <mxGeometry x="340" y="25" width="230" height="90" as="geometry" />
         </mxCell>
-        <mxCell id="dD" value="근거 충분?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="LD">
+        <mxCell id="dD" value="근거 충분?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="L4">
           <mxGeometry x="625" y="25" width="130" height="90" as="geometry" />
         </mxCell>
-        <mxCell id="D3" value="원인 후보 · 권장 조치 · 긴급도&lt;br&gt;(청소 / 제초 / 재촬영 / 현장 전기 점검)" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="LD">
+        <mxCell id="D3" value="원인 후보 · 권장 조치 · 긴급도&lt;br&gt;(청소 / 제초 / 재촬영 / 현장 전기 점검)" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="L4">
           <mxGeometry x="820" y="35" width="250" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="D4" value="원인 판별 어려움&lt;br&gt;추가 촬영·측정 요청" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="LD">
+        <mxCell id="D4" value="원인 판별 어려움&lt;br&gt;추가 촬영·측정 요청" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="L4">
           <mxGeometry x="600" y="140" width="180" height="50" as="geometry" />
         </mxCell>
 
-        <!-- E. 점검 생성·환류 -->
-        <mxCell id="LE" value="⑤ 점검 생성·환류" style="swimlane;horizontal=0;startSize=40;html=1;fontSize=14;fontStyle=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="40" y="810" width="1160" height="230" as="geometry" />
+        <mxCell id="L5" value="⑤ 점검 생성·환류" style="swimlane;horizontal=0;startSize=40;html=1;fontSize=14;fontStyle=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1040" width="1160" height="230" as="geometry" />
         </mxCell>
-        <mxCell id="E1" value="손실·우선순위 산정&lt;br&gt;&lt;i&gt;규칙 → 머신러닝 · 신규&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="LE">
-          <mxGeometry x="60" y="35" width="190" height="70" as="geometry" />
+        <mxCell id="E1" value="손실·우선순위 산정&lt;br&gt;안전 건 즉시 통보&lt;br&gt;&lt;i&gt;규칙 → 머신러닝 · 신규&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="L5">
+          <mxGeometry x="60" y="30" width="190" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="E2" value="점검 생성 에이전트&lt;br&gt;인버터·접속반·스트링별 작업지시,&lt;br&gt;동선·준비물·점검 항목&lt;br&gt;&lt;i&gt;에이전트 · 신규&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="LE">
+        <mxCell id="E2" value="점검 생성 에이전트&lt;br&gt;인버터·접속반·스트링별 작업지시,&lt;br&gt;동선·준비물·점검 항목&lt;br&gt;&lt;i&gt;에이전트 · 신규&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="L5">
           <mxGeometry x="290" y="25" width="230" height="90" as="geometry" />
         </mxCell>
-        <mxCell id="dE" value="운영자&lt;br&gt;승인?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="LE">
+        <mxCell id="dE" value="운영자&lt;br&gt;승인?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="L5">
           <mxGeometry x="570" y="25" width="130" height="90" as="geometry" />
         </mxCell>
-        <mxCell id="E3" value="현장 점검·조치" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="LE">
+        <mxCell id="E3" value="현장 점검·조치" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="L5">
           <mxGeometry x="750" y="40" width="160" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="E4" value="점검 결과 입력 · 완료 처리&lt;br&gt;(실제 원인·조치)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="LE">
+        <mxCell id="E4" value="점검 결과 입력 · 완료 처리&lt;br&gt;(실제 원인·조치·위치)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="L5">
           <mxGeometry x="960" y="40" width="160" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="E5" value="이력 DB·대시보드&lt;br&gt;조치 모듈은 다음 촬영에서 해소 확인" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;size=10;" vertex="1" parent="LE">
+        <mxCell id="E5" value="이력 DB&lt;br&gt;회차 비교, 조치 모듈은&lt;br&gt;다음 촬영에서 해소 확인" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;size=10;" vertex="1" parent="L5">
           <mxGeometry x="940" y="135" width="200" height="75" as="geometry" />
         </mxCell>
-        <mxCell id="E6" value="재학습·임계값 보정&lt;br&gt;&lt;i&gt;머신러닝 운영 · 신규&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="LE">
+        <mxCell id="E6" value="재학습·임계값 보정&lt;br&gt;&lt;i&gt;머신러닝 운영 · 신규&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="L5">
           <mxGeometry x="660" y="145" width="210" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="L6" value="운영 기반 (공통)" style="swimlane;horizontal=0;startSize=40;html=1;fontSize=14;fontStyle=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1270" width="1160" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="Z1" value="분석 실행 운영&lt;br&gt;묶음 병렬·이어 실행·PC 분할&lt;br&gt;&lt;i&gt;규칙 → 에이전트 · 일부&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="L6">
+          <mxGeometry x="60" y="28" width="200" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="Z2" value="결과 확인 화면&lt;br&gt;웹 관제·현장 3D·검토표·회차 보고서&lt;br&gt;&lt;i&gt;구현됨 (보고서 신규)&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="L6">
+          <mxGeometry x="285" y="28" width="200" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="Z3" value="회차 관리·이력 비교&lt;br&gt;신규·지속·해소 이상&lt;br&gt;&lt;i&gt;내부 저장 · 신규&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="L6">
+          <mxGeometry x="510" y="28" width="190" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="Z4" value="모델·기준 버전 관리&lt;br&gt;변경 시 같은 사례로 재평가&lt;br&gt;&lt;i&gt;규칙 · 일부&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="L6">
+          <mxGeometry x="725" y="28" width="190" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="Z5" value="정확도 검증·저장·보안&lt;br&gt;측량 대조, 정상 표본 검수, 백업" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="L6">
+          <mxGeometry x="940" y="28" width="190" height="70" as="geometry" />
         </mxCell>
 
         <!-- 범례 -->
         <mxCell id="lg0" value="범례" style="text;html=1;align=left;verticalAlign=middle;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="40" y="1060" width="50" height="30" as="geometry" />
+          <mxGeometry x="40" y="1410" width="50" height="30" as="geometry" />
         </mxCell>
         <mxCell id="lg1" value="규칙·계산" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-          <mxGeometry x="100" y="1060" width="110" height="30" as="geometry" />
+          <mxGeometry x="100" y="1410" width="110" height="30" as="geometry" />
         </mxCell>
         <mxCell id="lg2" value="딥러닝·머신러닝" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
-          <mxGeometry x="230" y="1060" width="130" height="30" as="geometry" />
+          <mxGeometry x="230" y="1410" width="130" height="30" as="geometry" />
         </mxCell>
         <mxCell id="lg3" value="AI 에이전트" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
-          <mxGeometry x="380" y="1060" width="110" height="30" as="geometry" />
+          <mxGeometry x="380" y="1410" width="110" height="30" as="geometry" />
         </mxCell>
         <mxCell id="lg4" value="사람이 하는 일" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
-          <mxGeometry x="510" y="1060" width="120" height="30" as="geometry" />
+          <mxGeometry x="510" y="1410" width="120" height="30" as="geometry" />
         </mxCell>
         <mxCell id="lg5" value="보류·추가 확인" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
-          <mxGeometry x="650" y="1060" width="120" height="30" as="geometry" />
+          <mxGeometry x="650" y="1410" width="120" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="lg6" value="점선: 점검 결과가 모델과 기준을 개선하는 환류 경로" style="text;html=1;align=left;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="790" y="1060" width="400" height="30" as="geometry" />
+        <mxCell id="lg6" value="점선: 점검 결과가 모델과 기준을 개선하는 환류 경로 · ⓪은 현장마다 한 번(카메라·도면이 바뀌면 다시), ①~⑤는 촬영 회차마다" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="790" y="1405" width="450" height="40" as="geometry" />
         </mxCell>
 
         <!-- 연결선 -->
-        <mxCell id="x1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="A1" target="A2"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="x2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="A2" target="A3"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="x3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="A3" target="dA"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="x4" value="아니오" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="dA" target="A4"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="x5" value="예" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="dA" target="B1">
-          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="880" y="222" /><mxPoint x="180" y="222" /></Array></mxGeometry>
+        <mxCell id="e_P1_P2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="P1" target="P2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_P2_P3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="P2" target="P3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_P3_A1" value="회차 시작" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="P3" target="A1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="665" y="196" /><mxPoint x="210" y="196" /></Array></mxGeometry>
         </mxCell>
-        <mxCell id="x6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="B1" target="B2"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="x7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="B2" target="B3"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="x8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="B3" target="B4"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="x9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="B4" target="B5"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="x10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="B5" target="C1">
-          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1080" y="372" /><mxPoint x="200" y="372" /></Array></mxGeometry>
+        <mxCell id="e_A1_A2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="A1" target="A2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_A2_A3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="A2" target="A3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_A3_dA" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="A3" target="dA"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_dA_A4" value="아니오" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="dA" target="A4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_dA_B1" value="예" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="dA" target="B1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="835" y="351" /><mxPoint x="175" y="351" /></Array></mxGeometry>
         </mxCell>
-        <mxCell id="x11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="C1" target="C2"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="x12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="C2" target="dC"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="x13" value="예" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="dC" target="C3"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="x14" value="아니오" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="dC" target="C4"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="x15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="C3" target="D1">
-          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="935" y="575" /><mxPoint x="220" y="575" /></Array></mxGeometry>
+        <mxCell id="e_B1_B2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="B1" target="B2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_B2_B3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="B2" target="B3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_B3_B4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="B3" target="B4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_B4_B5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="B4" target="B5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_B5_B6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="B5" target="B6">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1045" y="488" /><mxPoint x="205" y="488" /></Array></mxGeometry>
         </mxCell>
-        <mxCell id="x16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="D1" target="D2"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="x17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="D2" target="dD"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="x18" value="예" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="dD" target="D3"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="x19" value="아니오" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="dD" target="D4"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="x20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="D3" target="E1">
-          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="985" y="795" /><mxPoint x="195" y="795" /></Array></mxGeometry>
+        <mxCell id="e_B6_B7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="B6" target="B7"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_B7_B8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="B7" target="B8"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_B8_B9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="B8" target="B9"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_B9_B10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="B9" target="B10"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_B10_C1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="B10" target="C1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1075" y="611" /><mxPoint x="205" y="611" /></Array></mxGeometry>
         </mxCell>
-        <mxCell id="x21" value="추가 확인도 점검으로 생성" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="D4" target="E2">
-          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="445" y="755" /></Array></mxGeometry>
+        <mxCell id="e_C1_C2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="C1" target="C2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_C2_dC" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="C2" target="dC"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_dC_C3" value="예" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="dC" target="C3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_dC_C4" value="아니오" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="dC" target="C4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_C3_D1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="C3" target="D1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="930" y="812" /><mxPoint x="220" y="812" /></Array></mxGeometry>
         </mxCell>
-        <mxCell id="x22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="E1" target="E2"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="x23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="E2" target="dE"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="x24" value="예" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="dE" target="E3"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="x25" value="아니오: 수정 요청" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="dE" target="E2">
-          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="675" y="945" /><mxPoint x="445" y="945" /></Array></mxGeometry>
+        <mxCell id="e_D1_D2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="D1" target="D2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_D2_dD" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="D2" target="dD"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_dD_D3" value="예" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="dD" target="D3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_dD_D4" value="아니오" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="dD" target="D4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_D3_E1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="D3" target="E1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="985" y="1031" /><mxPoint x="195" y="1031" /></Array></mxGeometry>
         </mxCell>
-        <mxCell id="x26" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="E3" target="E4"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="x27" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="E4" target="E5"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="x28" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;" edge="1" parent="1" source="E5" target="E6"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="x29" value="모델·기준 개선" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="E6" target="C2">
-          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="20" y="982" /><mxPoint x="20" y="540" /><mxPoint x="455" y="540" /></Array></mxGeometry>
+        <mxCell id="e_D4_E2" value="추가 확인도 점검으로 생성" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="D4" target="E2">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="445" y="985" /></Array></mxGeometry>
         </mxCell>
-        <mxCell id="x30" value="진단 사례 축적" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;exitX=0;exitY=0.75;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="E6" target="D2">
-          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="28" y="996" /><mxPoint x="28" y="735" /><mxPoint x="495" y="735" /></Array></mxGeometry>
+        <mxCell id="e_E1_E2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="E1" target="E2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_E2_dE" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="E2" target="dE"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_dE_E3" value="예" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="dE" target="E3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_dE_E2" value="아니오: 수정 요청" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="dE" target="E2">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="675" y="1168" /><mxPoint x="445" y="1168" /></Array></mxGeometry>
         </mxCell>
-        <mxCell id="x31" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="C4" target="E5">
-          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1190" y="552" /><mxPoint x="1190" y="982" /></Array></mxGeometry>
+        <mxCell id="e_E3_E4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="E3" target="E4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_E4_E5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="E4" target="E5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_E5_E6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;" edge="1" parent="1" source="E5" target="E6"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e_E6_C2" value="모델·기준 개선" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="E6" target="C2">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="20" y="1212" /><mxPoint x="20" y="750" /><mxPoint x="455" y="750" /></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="e_E6_D2" value="진단 사례 축적" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;exitX=0;exitY=0.75;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="E6" target="D2">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="28" y="1226" /><mxPoint x="28" y="955" /><mxPoint x="495" y="955" /></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="e_C4_E5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="C4" target="E5">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1190" y="788" /><mxPoint x="1190" y="1212" /></Array></mxGeometry>
         </mxCell>
       </root>
     </mxGraphModel>

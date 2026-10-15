@@ -1,4 +1,4 @@
-"""Shape rules for thermal anomaly types (과제_기획서 3.4) plus shading and viewing-angle cautions.
+"""Shape rules for thermal anomaly types (과제_기획서 4.3) plus shading and viewing-angle cautions.
 
 Each observation's module is cut from the radiometric array (640x512 float32, the
 detection boxes are in the 1280x1024 display frame) and rotated into a canonical

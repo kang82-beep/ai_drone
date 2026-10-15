@@ -1,4 +1,4 @@
-"""Estimate the fixed thermal→visible image transform of the M4T (과제_기획서 3.2, step 1).
+"""Estimate the fixed thermal→visible image transform of the M4T (과제_기획서 4.1, step 1).
 
 Both cameras sit on one gimbal, so at the 30 m survey height one affine transform
 should map thermal pixels onto the wide-camera image. For a sample of captures this
