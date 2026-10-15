@@ -79,7 +79,7 @@ const ACTIONS = ['조치 없음', '청소', '제초', '모듈 교체 접수', '�
 const COMPONENTS = [
   ['촬영 조건 확인 (일사, 속도)', '규칙', 'part', '일사 기준만 구현'], ['방사온도 추출', 'DJI SDK', 'done', ''],
   ['모듈 검출·분할', 'Mask R-CNN', 'done', '정확도 미측정'], ['열화상–가시광 정합', '고정 변환 (M4T 짐벌)', 'part', S.rgb_alignment ? `오차 중앙값 ${num(S.rgb_alignment.offset_from_fixed_px_median, 0)}px · 프레임별 미세 조정 없음` : ''],
-  ['설비 주소 연결', 'RTK 투영 + 도면 정합', 'part', '한 칸 어긋남 미해결'], ['다중 촬영 통합', '규칙', 'done', '다수결 판정, 가장자리 관측 제외'],
+  ['설비 주소 연결', 'RTK 투영 + 카메라 보정 + 비행 줄 연결', 'part', S.registration.lines ? `비행 줄 ${S.registration.lines.resolved}/${S.registration.lines.total} 결정 · 측량 검증 전` : '한 칸 어긋남 미해결'], ['다중 촬영 통합', '규칙', 'done', '다수결 판정, 가장자리 관측 제외'],
   ['주변 대비 온도차', '규칙', 'done', ''], ['접속반·인버터 단위 비교', '규칙', 'part', '반경 6m 이웃·스트링 비교, 인버터 단위는 전체 분석 후'],
   ['이상 탐지', '규칙 + EfficientNet-B3', 'done', '표시 영상 기반'], ['이상 유형 분류', '형상 규칙 (온도 배열)', 'part', '1차 규칙 · 현장 검증 전'],
   ['원인 추정', 'AI 에이전트', 'none', ''], ['손실·우선순위 산정', '규칙', 'none', ''],
@@ -373,8 +373,10 @@ function pipeline() {
       </div>
       <p class="label" style="margin:14px 0 6px">프레임별 정합 (촬영 순)</p>
       <div class="frames">${R.frame_rows.map(f => `<i class="${f.status === 'registered' ? '' : 'no'}" title="${esc(frameNo(f.image_id))} · ${esc(f.status)} · 관측 ${f.observations}"></i>`).join('')}</div>
-      <div class="callout warn" style="margin-top:14px"><b>모듈 한 칸 어긋남을 아직 배제하지 못했습니다.</b>
-        <p class="sub">가장 잘 맞는 위치와 그다음 위치의 차이가 작아 모든 연결은 후보입니다. 측량 기준점으로 확정하기 전에는 스트링 단위로 보는 것이 안전합니다.</p></div>
+      ${R.lines ? `<div class="callout warn" style="margin-top:14px"><b>비행 줄 ${R.lines.resolved} / ${R.lines.total}줄의 모듈 위치를 정했습니다.</b>
+        <p class="sub">줄마다 도로 틈·배열 끝(${int(R.lines.decided_by.row_ends || 0)}줄)과 줄 추세(${int(R.lines.decided_by.trend || 0)}줄)로 몇 번째 모듈인지 정했습니다. 정하지 못한 줄의 관측 ${int(R.lines.unresolved_observations)}건은 한 칸 어긋남을 배제할 수 없습니다. 측량 기준점으로 검증하기 전이므로 모든 연결은 후보입니다.</p></div>`
+      : `<div class="callout warn" style="margin-top:14px"><b>모듈 한 칸 어긋남을 아직 배제하지 못했습니다.</b>
+        <p class="sub">가장 잘 맞는 위치와 그다음 위치의 차이가 작아 모든 연결은 후보입니다. 측량 기준점으로 확정하기 전에는 스트링 단위로 보는 것이 안전합니다.</p></div>`}
       <ul class="sub" style="padding-left:16px;margin:10px 0 0">${R.limitations.map(l => `<li>${esc(l)}</li>`).join('')}</ul></div>
     <div class="card"><div class="head"><h2>${icon('scan')}검출 품질</h2><span class="sub">분석 완료분 ${int(S.observations.total)}건</span></div>
       ${[['배열 구조와 맞는 검출', S.observations.structure.supported || 0, 'var(--ok)'], ['검토 필요', S.observations.structure.review || 0, 'var(--warn)'], ['신뢰 낮음', S.observations.structure.low || 0, 'var(--crit)']]

@@ -266,6 +266,10 @@ def main():
                          'observations': report['observations'], 'linked': matched,
                          'modules_observed': report['drawing_modules_observed'], 'strings_observed': report['strings_observed'],
                          'pitch_resolved': report['whole_pitch_test']['resolved'],
+                         'lines': None if not report.get('flight_lines') else {
+                             'total': report['flight_lines']['lines'], 'resolved': report['flight_lines']['resolved'],
+                             'decided_by': report['flight_lines'].get('decided_by', {}),
+                             'unresolved_observations': report.get('module_candidates_line_unresolved', 0)},
                          'visual_agreement': clean(report.get('visual_link_agreement', {}).get('agreement')),
                          'frame_shift_std_m': report.get('frame_shift_std_m'), 'limitations': report.get('limitations', []),
                          'modules_by_final': modules['worst_final'].value_counts().to_dict(),

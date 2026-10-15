@@ -7,7 +7,12 @@ DEDUP_METHOD = "visual"
 ASSOCIATION_GPS_RADIUS_M = 2.0
 ASSOCIATION_FRAME_WINDOW = 3
 GEO_USE_RELATIVE_ALTITUDE = False
-GEO_SURFACE_ABOVE_TAKEOFF_M = 0.0
+# Fitted on the Shinan3 2025-10-30 flight (M4T thermal, 30 m, about 6 m/s) by
+# register_flight.py --calibrate; refit for another camera, site or flight speed.
+GEO_SURFACE_ABOVE_TAKEOFF_M = 1.48  # mean panel surface above the take-off point
+GEO_YAW_OFFSET_DEG = -0.64          # gimbal yaw against the drawing rows
+GEO_CAMERA_FORWARD_M = 0.45         # exposure lags the position stamp by about 75 ms
+GEO_CAMERA_RIGHT_M = -0.09
 from pathlib import Path
 
 INPUT_IMG_DIR    = r"C:\Users\USER\Desktop\3호기\DJI_202607290944_006_3호기"
@@ -142,6 +147,10 @@ def configure(path=None, output_root=None, input_dir=None):
     for key in ("DEDUP_EPS_M", "SNAP_EPS_M", "ALT_AGL_M", "NEIGHBOR_DELTA_ATT_TH", "IRRADIANCE_MIN_W_M2"):
         if not 0 < globals()[key] < float("inf"):
             raise ValueError(f"{key} must be finite and positive")
+
+def camera_model():
+    return dict(yaw_offset_deg=GEO_YAW_OFFSET_DEG, forward_m=GEO_CAMERA_FORWARD_M, right_m=GEO_CAMERA_RIGHT_M)
+
 
 def validate_inputs():
     errors = []

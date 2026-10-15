@@ -76,7 +76,47 @@ def camera_rotation(yaw, pitch, roll):
     return np.array([[cy,-sy,0],[sy,cy,0],[0,0,1]]) @ np.array([[cp,0,sp],[0,1,0],[-sp,0,cp]]) @ np.array([[1,0,0],[0,cr,-sr],[0,sr,cr]])
 
 
-def project_pixel(u, v, width, height, lat, lon, pose, height_m, focal_35mm=52.0):
+NEUTRAL_CAMERA = dict(yaw_offset_deg=0.0, forward_m=0.0, right_m=0.0)
+
+
+def camera_model_text(camera):
+    """Compact record of the camera correction, stored with every projected observation."""
+    c = {**NEUTRAL_CAMERA, **(camera or {})}
+    return ';'.join(f'{k}={c[k]:g}' for k in NEUTRAL_CAMERA)
+
+
+def parse_camera_model(text):
+    """Inverse of camera_model_text; empty or missing means the uncorrected model."""
+    camera = dict(NEUTRAL_CAMERA)
+    if isinstance(text, str) and text:
+        for item in text.split(';'):
+            key, _, value = item.partition('=')
+            if key in camera:
+                camera[key] = float(value)
+    return camera
+
+
+def ground_offset(u, v, width, height, yaw, pitch, roll, height_m, focal_35mm=52.0, camera=None):
+    """North/east metres from the camera position to where pixel (u, v) meets the flat plane.
+
+    `camera` holds the corrections fitted by register_flight.py --calibrate: a gimbal yaw bias and
+    a camera offset from the GPS position in the camera's forward/right axes. Returns
+    None when the ray does not reach the plane.
+    """
+    c = {**NEUTRAL_CAMERA, **(camera or {})}
+    focal_px = math.hypot(width,height) * focal_35mm / math.hypot(36,24)
+    yaw = yaw + c['yaw_offset_deg']
+    ray = camera_rotation(yaw, pitch, roll) @ np.array([1,(u-width/2)/focal_px,(v-height/2)/focal_px])
+    if ray[2] <= 0.1:
+        return None
+    north, east, _ = ray * (height_m/ray[2])
+    y = math.radians(yaw)
+    north += c['forward_m'] * math.cos(y) - c['right_m'] * math.sin(y)
+    east += c['forward_m'] * math.sin(y) + c['right_m'] * math.cos(y)
+    return float(north), float(east)
+
+
+def project_pixel(u, v, width, height, lat, lon, pose, height_m, focal_35mm=52.0, camera=None):
     """Return lat/lon plus status; unknown attitude yields no invented coordinate.
 
     Assumes centered principal point, square pixels, diagonal 35mm equivalence,
@@ -90,10 +130,8 @@ def project_pixel(u, v, width, height, lat, lon, pose, height_m, focal_35mm=52.0
         return None, None, 'invalid_geometry'
     if not (-90 < lat < 90 and -180 <= lon <= 180):
         return None, None, 'invalid_position'
-    focal_px = math.hypot(width,height) * focal_35mm / math.hypot(36,24)
-    ray = camera_rotation(*(pose[k] for k in required)) @ np.array([1,(u-width/2)/focal_px,(v-height/2)/focal_px])
-    if ray[2] <= 0.1:
+    offset = ground_offset(u, v, width, height, *(pose[k] for k in required), height_m, focal_35mm, camera)
+    if offset is None:
         return None, None, 'ray_near_or_above_horizon'
-    north,east,_ = ray * (height_m/ray[2])
-    out_lat,out_lon = _enu_offset_to_latlon(lat,lon,float(east),float(north))
+    out_lat,out_lon = _enu_offset_to_latlon(lat,lon,offset[1],offset[0])
     return out_lat,out_lon,'approximate_flat_plane'

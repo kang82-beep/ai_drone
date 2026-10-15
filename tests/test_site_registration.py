@@ -90,6 +90,34 @@ class SiteRegistrationTests(unittest.TestCase):
         linked = work[work.drawing_module_id.notna()]
         self.assertGreater((linked.drawing_module_id == linked.truth).mean(), 0.99)
 
+    def test_flight_lines_carry_the_module_count_through_drifting_gps(self):
+        # Lines fly along long rows; GPS drifts along the track by more than half a module
+        # and flips its offset with the flight direction. Frames alone snap to wrong modules.
+        site = make_site(rows=24, columns=120)
+        site = site[~site.x.between(55, 62)]  # a road across the rows, as on the real site
+        rng = np.random.default_rng(5)
+        rows, second = [], 0
+        for line, fn in enumerate((0, 5.8, 11.6, 17.4, 23.2, 29.0, 34.8, 40.6)):
+            east = line % 2 == 0
+            drift = 0.0
+            for step in range(20):
+                fx = step * 5.5 if east else 105 - step * 5.5
+                drift += rng.normal(0, 0.12)
+                error = np.array([0.45 * (1 if east else -1) + drift + 0.004 * fn, 0.0])
+                seen = site[(site.x.between(fx - 6, fx + 6)) & (site.n.between(fn - 1, fn + 8))]
+                second += 1
+                image = f'DJI_20251030{9 + second // 3600:02}{second // 60 % 60:02}{second % 60:02}_{second:04}_T'
+                for _, m in seen.iterrows():
+                    lat, lon = latlon(*(np.array([m.x, m.n]) + error + rng.normal(0, 0.03, 2)))
+                    rows.append(dict(image_id=image, mod_lat=lat, mod_lon=lon, truth=m.drawing_module_id,
+                                     gimbal_yaw=90.0 if east else -90.0, final='normal', delta_temp=1.0))
+            second += 30  # turn between lines
+        work, frames, report = register(pd.DataFrame(rows), site, reference(site))
+        linked = work[work.drawing_module_id.notna()]
+        self.assertGreater((linked.drawing_module_id == linked.truth).mean(), 0.99)
+        self.assertEqual(report['flight_lines']['lines'], 8)
+        self.assertAlmostEqual(report['flight_lines']['trend']['along_track_m'], -0.45, delta=0.1)  # correction undoes the error
+
     def test_periodic_interior_is_reported_unresolved(self):
         site = make_site()
         interior = site[site.x.between(12, 30)]

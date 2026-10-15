@@ -6,7 +6,7 @@ from .two_row_structure import detector_candidates, filter_two_row_candidates
 from .array_refinement import refine_arrays
 from .neighbor_delta import add_neighbor_delta
 from .checkpoints import prepare_run
-from .geolocation import read_dji_pose, read_mrk, match_mrk, project_pixel
+from .geolocation import read_dji_pose, read_mrk, match_mrk, project_pixel, camera_model_text
 from typing import List, Dict, Tuple, Optional
 from PIL import Image, ImageDraw, ImageFile, ExifTags
 from glob import glob
@@ -368,7 +368,7 @@ def main():
             cx = (x1 + x2) * 0.5; cy = (y1 + y2) * 0.5
             Wg, Hg, gsd_x, gsd_y = _gsd_from_fov_and_alt(HFOV_DEG, VFOV_DEG, height_m, W, H)
             mod_lat, mod_lon, geo_status = project_pixel(
-                cx, cy, W, H, lat, lon, pose, height_m, config.FOCAL_35MM_EQ)
+                cx, cy, W, H, lat, lon, pose, height_m, config.FOCAL_35MM_EQ, config.camera_model())
 
             snap_mid = None; snap_lat = None; snap_lon = None
             if config.SNAP_ENABLE and module_catalog and (mod_lat is not None) and (mod_lon is not None):
@@ -402,6 +402,7 @@ def main():
                 "mod_lat": None if (mod_lat is None) else float(mod_lat),
                 "mod_lon": None if (mod_lon is None) else float(mod_lon),
                 "geo_status": geo_status,
+                "geo_camera_model": camera_model_text(config.camera_model()),
                 "position_source": position_source,
                 "height_source": height_source,
                 "camera_to_surface_m": height_m,
