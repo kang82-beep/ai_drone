@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="ko"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Hanken+Grotesk:wght@100..900&display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={"darkMode":"class","theme":{"extend":{"colors":{"inverse-primary":"#006591","surface-variant":"#30353a","outline":"#88929b","primary-container":"#0ea5e9","on-primary-container":"#003751","caution-yellow":"#FBBF24","on-tertiary-fixed-variant":"#693c00","on-tertiary-container":"#4d2b00","tertiary-container":"#de8712","on-error-container":"#ffdad6","surface-tint":"#89ceff","on-secondary-fixed-variant":"#004b73","surface-dim":"#0f1418","on-tertiary-fixed":"#2c1600","solar-amber":"#F59E0B","on-tertiary":"#492900","secondary":"#93ccff","error-container":"#93000a","on-error":"#690005","surface-container-highest":"#30353a","on-secondary-fixed":"#001d31","inference-cyan":"#06B6D4","surface-bright":"#353a3e","on-secondary-container":"#002c47","surface":"#0f1418","surface-container-high":"#252b2f","on-surface-variant":"#bec8d2","hotspot-crimson":"#EF4444","surface-container-low":"#171c20","background":"#0f1418","tertiary-fixed-dim":"#ffb86e","surface-container":"#1b2024","nominal-emerald":"#10B981","on-primary-fixed-variant":"#004c6e","on-primary":"#00344d","error":"#ffb4ab","on-surface":"#dee3e9","secondary-fixed":"#cce5ff","tertiary-fixed":"#ffdcbd","primary-fixed-dim":"#89ceff","inverse-surface":"#dee3e9","outline-variant":"#3e4850","primary":"#89ceff","inverse-on-surface":"#2c3135","surface-container-lowest":"#0a0f13","tertiary":"#ffb86e","secondary-container":"#3198dc","on-primary-fixed":"#001e2f","on-background":"#dee3e9","on-secondary":"#003351","secondary-fixed-dim":"#93ccff","primary-fixed":"#c9e6ff"},"borderRadius":{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},"spacing":{"margin":"1.5rem","space-lg":"1.5rem","space-md":"1rem","margin-mobile":"1rem","space-xs":"0.25rem","gutter-mobile":"0.75rem","space-sm":"0.5rem","gutter":"1rem","space-xl":"2rem"},"fontFamily":{"headline-lg":["Geist"],"body-lg":["Hanken Grotesk"],"body-sm":["Hanken Grotesk"],"label-md":["Geist"],"body-md":["Hanken Grotesk"],"headline-xl-mobile":["Geist"],"label-sm":["Geist"],"headline-md":["Geist"],"headline-sm":["Geist"],"headline-xl":["Geist"],"headline-lg-mobile":["Geist"],"metric-val":["Geist"]},"fontSize":{"headline-lg":["28px",{"lineHeight":"36px","letterSpacing":"-0.02em","fontWeight":"600"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}],"body-sm":["12px",{"lineHeight":"18px","fontWeight":"400"}],"label-md":["12px",{"lineHeight":"16px","letterSpacing":"0.04em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","fontWeight":"400"}],"headline-xl-mobile":["30px",{"lineHeight":"38px","letterSpacing":"-0.015em","fontWeight":"600"}],"label-sm":["10px",{"lineHeight":"14px","letterSpacing":"0.06em","fontWeight":"600"}],"headline-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.01em","fontWeight":"500"}],"headline-sm":["16px",{"lineHeight":"24px","letterSpacing":"-0.005em","fontWeight":"500"}],"headline-xl":["40px",{"lineHeight":"48px","letterSpacing":"-0.02em","fontWeight":"600"}],"headline-lg-mobile":["24px",{"lineHeight":"32px","letterSpacing":"-0.015em","fontWeight":"600"}],"metric-val":["24px",{"lineHeight":"28px","letterSpacing":"-0.02em","fontWeight":"600"}]}}}};</script></head><body class="bg-background font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-64 bg-surface-container-lowest z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="flex flex-col"><div class="h-16 px-space-md flex items-center gap-space-sm bg-surface-container-low"><span class="material-symbols-outlined text-inference-cyan">radar</span><span class="font-headline-sm text-headline-sm text-on-surface tracking-tight">AeroSolar <span class="text-inference-cyan">OPS</span></span></div><div class="p-space-md"><div class="bg-surface-container px-space-md py-space-sm rounded-lg flex flex-col gap-space-xs"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Target Facility</span><div class="flex items-center justify-between text-on-surface font-headline-sm text-headline-sm"><span>신안3호기</span><span class="inline-flex items-center px-space-xs py-0.5 rounded text-[10px] bg-nominal-emerald/10 text-nominal-emerald font-label-sm">ACTIVE</span></div><p class="font-body-sm text-body-sm text-on-surface-variant">30,000 모듈 / 1,500 스트링</p></div></div><nav class="flex flex-col gap-space-xs px-space-sm" data-active-classes="bg-primary-container text-on-primary-container font-headline-sm"><a class="flex items-center gap-space-md px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-body-md text-body-md" data-path="overview-and-operations" href="#"><span class="material-symbols-outlined text-[20px]">monitoring</span><span>종합 관제 대시보드</span></a><a class="flex items-center gap-space-md px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-body-md text-body-md" data-path="pipeline-monitor" href="#"><span class="material-symbols-outlined text-[20px]">timeline</span><span>5단계 파이프라인 분석</span></a><a class="flex items-center gap-space-md px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-body-md text-body-md" data-path="anomaly-and-multimodal-diagnosis" href="#"><span class="material-symbols-outlined text-[20px]">publish</span><span>이상 모듈 AI 정밀 진단</span></a><a class="flex items-center gap-space-md px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-body-md text-body-md" data-path="work-orders-and-feedback" href="#"><span class="material-symbols-outlined text-[20px]">assignment_turned_in</span><span>자동 작업지시 및 환류</span></a></nav></div><div class="p-space-md bg-surface-container-lowest flex flex-col gap-space-sm"><div class="bg-surface-container-low p-space-sm rounded-lg"><div class="flex items-center justify-between text-on-surface-variant mb-space-xs"><span class="font-label-sm text-label-sm">TELEMETRY FEED</span><span class="w-2 h-2 rounded-full bg-nominal-emerald animate-pulse"></span></div><div class="flex items-center justify-between text-on-surface font-label-md text-label-md"><span>RTK Link Status</span><span class="text-nominal-emerald">FIXED 99.8%</span></div></div></div></aside><div class="pl-64"><header class="fixed top-0 left-64 right-0 h-16 bg-surface-container-lowest/80 backdrop-blur-xl z-40 px-space-lg flex items-center justify-between shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="flex items-center gap-space-md"><img alt="SolarScan AI Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1V_SZxcBosqN06vx1ej7ejx_j3mrsQoTHKv2YQJUTd3TSNae9g_5pzYVRtdyu-C1_W4TGZ_SSznenesaFeWkQWGIIGBpfTR2PgGDXCWQVMgszzflKIRjRt5rHefN1o68XOfgDadeXbTQW7PYpTIOLF1czSRgQnT5aho-HXJiAHQ-BYZp-Dup3H2Dir4e8r13-bWj6O7ETMB4z-kjnyVUYxz6X0caj91Fiwc_V7AuHcChCLC7n24P03Tv4A"/><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-on-surface leading-tight">AeroSolar AI · 열화상 점검 관제</span><span class="font-body-sm text-body-sm text-on-surface-variant">자율 비행 기반 고해상도 IR/RGB 이상 징후 분석 플랫폼</span></div></div><div class="flex items-center gap-space-md"><div class="hidden xl:flex items-center gap-space-md bg-surface-container px-space-md py-1.5 rounded-lg"><div class="flex items-center gap-space-xs text-on-surface font-label-md text-label-md"><span class="material-symbols-outlined text-solar-amber text-[18px]">sunny</span><span>680 W/m²</span></div><div class="w-px h-4 bg-outline-variant"></div><div class="flex items-center gap-space-xs text-on-surface font-label-md text-label-md"><span class="material-symbols-outlined text-inference-cyan text-[18px]">air</span><span>2.4 m/s</span></div><div class="w-px h-4 bg-outline-variant"></div><span class="inline-flex items-center gap-1 px-space-xs py-0.5 rounded bg-nominal-emerald/10 text-nominal-emerald font-label-sm text-label-sm"><span class="w-1.5 h-1.5 rounded-full bg-nominal-emerald"></span>점검 최적 조건</span></div><div class="flex items-center gap-space-sm"><button class="px-space-md py-1.5 rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors flex items-center gap-1.5" type="button"><span class="material-symbols-outlined text-[16px]">cloud_upload</span>신규 데이터 업로드</button><button class="px-space-md py-1.5 rounded bg-primary-container hover:bg-primary text-on-primary-container font-label-md text-label-md transition-colors flex items-center gap-1.5" type="button"><span class="material-symbols-outlined text-[16px]">play_arrow</span>자동 분석 실행</button><button class="px-space-md py-1.5 rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors flex items-center gap-1.5" type="button"><span class="material-symbols-outlined text-[16px]">download</span>작업지시서</button></div><div class="relative flex items-center"><button class="relative p-2 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-hotspot-crimson"></span></button></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></header><main class="relative pt-16 w-full px-space-lg bg-surface min-h-screen"><div class="flex flex-col w-full gap-space-md py-space-md">
+<!-- Top Context Header Bar (HUD Style) -->
+<div class="flex flex-wrap items-center justify-between gap-space-md bg-surface-container-low px-space-md py-space-sm rounded-lg shadow-sm">
+<div class="flex items-center gap-space-md flex-wrap">
+<div class="flex items-center gap-space-xs text-inference-cyan">
+<span class="material-symbols-outlined text-[20px]">publish</span>
+<span class="font-headline-sm text-headline-sm tracking-tight text-on-surface">이상 모듈 AI 정밀 진단</span>
+</div>
+<div class="hidden sm:block h-4 w-px bg-outline-variant"></div>
+<div class="flex items-center gap-space-xs font-label-md text-label-md text-on-surface-variant">
+<span>대상 설비:</span>
+<span class="text-on-surface font-headline-sm text-headline-sm">신안 3호 발전소 (Sinan Unit 3)</span>
+</div>
+<span class="inline-flex items-center gap-1.5 px-space-xs py-0.5 rounded bg-hotspot-crimson/15 text-hotspot-crimson font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-hotspot-crimson animate-pulse"></span>
+        CRITICAL FAULT RUNNING
+      </span>
+</div>
+<!-- Met & Inference State Tokens -->
+<div class="flex items-center gap-space-md font-label-sm text-label-sm">
+<div class="flex items-center gap-space-xs bg-surface-container px-space-sm py-1 rounded">
+<span class="text-on-surface-variant">IR/RGB 픽셀 정합 오차:</span>
+<span class="text-nominal-emerald font-label-md text-label-md">0.42 px (Sub-pixel Calibrated)</span>
+</div>
+<div class="flex items-center gap-space-xs bg-surface-container px-space-sm py-1 rounded">
+<span class="text-on-surface-variant">보안 필터:</span>
+<span class="text-inference-cyan font-label-md text-label-md">EXIF Strip ON</span>
+</div>
+</div>
+</div>
+<!-- 3-Column Diagnostic Command Center Layout -->
+<div class="grid grid-cols-12 gap-space-md items-start w-full">
+<!-- LEFT PANEL: Anomaly Detection Queue (Col 3) -->
+<aside class="col-span-12 lg:col-span-3 flex flex-col gap-space-sm bg-surface-container-low p-space-sm rounded-lg shadow-sm">
+<div class="flex items-center justify-between px-space-xs py-1">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-inference-cyan text-[18px]">view_list</span>
+<span class="font-label-md text-label-md text-on-surface tracking-wider uppercase">이상 탐지 목록 (48건)</span>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface text-label-sm" type="button">
+<span class="material-symbols-outlined text-[16px]">filter_list</span>
+</button>
+</div>
+<!-- Compact Filters -->
+<div class="grid grid-cols-3 gap-1 bg-surface-container-lowest p-1 rounded">
+<button class="py-1 px-1 rounded text-center font-label-sm text-label-sm bg-primary-container text-on-primary-container font-semibold" type="button">
+          전체 (48)
+        </button>
+<button class="py-1 px-1 rounded text-center font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface" type="button">
+          긴급 A (9)
+        </button>
+<button class="py-1 px-1 rounded text-center font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface" type="button">
+          주의 B (23)
+        </button>
+</div>
+<!-- Quick Search Bar -->
+<div class="relative flex items-center bg-surface-container px-space-sm py-1 rounded">
+<span class="material-symbols-outlined text-on-surface-variant text-[16px] mr-1">search</span>
+<input class="w-full bg-transparent text-on-surface font-body-sm text-body-sm focus:outline-none placeholder:text-outline" placeholder="접속반/인버터/모듈 검색..." type="text" value="JB14"/>
+</div>
+<!-- Anomaly Cards List -->
+<div class="flex flex-col gap-space-xs overflow-y-auto max-h-[680px] pr-1">
+<!-- Active Target Item: M12 Hotspot -->
+<div class="p-space-sm rounded bg-surface-container-high border-l-4 border-hotspot-crimson cursor-pointer transition-all shadow-sm">
+<div class="flex items-center justify-between mb-1">
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-hotspot-crimson/20 text-hotspot-crimson font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-hotspot-crimson animate-ping"></span>
+              긴급 A · 국부 핫스팟
+            </span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">09:42:15 KST</span>
+</div>
+<div class="font-headline-sm text-headline-sm text-on-surface tracking-tight">
+            #SH3-JB14-M12
+          </div>
+<div class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+            INV04 · JB14 · STR08 · Cell #4
+          </div>
+<div class="flex items-center justify-between mt-2 pt-1.5 border-t border-outline-variant/30 text-label-sm font-label-sm">
+<div class="text-hotspot-crimson font-semibold">T_max 62.4℃ (ΔT +14.2℃)</div>
+<div class="text-on-surface-variant">손실 ~18.5W</div>
+</div>
+</div>
+<!-- Target Item 2: Bypass Diode Failure -->
+<div class="p-space-sm rounded bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all">
+<div class="flex items-center justify-between mb-1">
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-solar-amber/20 text-solar-amber font-label-sm text-label-sm">
+              주의 B · 서브스트링 단락
+            </span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">09:38:02</span>
+</div>
+<div class="font-headline-sm text-headline-sm text-on-surface tracking-tight">
+            #SH3-JB09-STR02-M07
+          </div>
+<div class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+            INV02 · JB09 · STR02 · Diode #2
+          </div>
+<div class="flex items-center justify-between mt-2 pt-1.5 border-t border-outline-variant/30 text-label-sm font-label-sm">
+<div class="text-solar-amber font-semibold">T_max 49.1℃ (ΔT +8.3℃)</div>
+<div class="text-on-surface-variant">다이오드 고장</div>
+</div>
+</div>
+<!-- Target Item 3: String Open Circuit -->
+<div class="p-space-sm rounded bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all">
+<div class="flex items-center justify-between mb-1">
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-caution-yellow/20 text-caution-yellow font-label-sm text-label-sm">
+              주의 B · 스트링 개방
+            </span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">09:31:54</span>
+</div>
+<div class="font-headline-sm text-headline-sm text-on-surface tracking-tight">
+            #SH3-JB03-STR11-ALL
+          </div>
+<div class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+            INV01 · JB03 · 20개 모듈 일괄 저온
+          </div>
+<div class="flex items-center justify-between mt-2 pt-1.5 border-t border-outline-variant/30 text-label-sm font-label-sm">
+<div class="text-caution-yellow font-semibold">T_avg 29.8℃ (ΔT -6.2℃)</div>
+<div class="text-on-surface-variant">퓨즈/단선 의심</div>
+</div>
+</div>
+<!-- Target Item 4: PID Suspect -->
+<div class="p-space-sm rounded bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all">
+<div class="flex items-center justify-between mb-1">
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-on-surface-variant/20 text-on-surface-variant font-label-sm text-label-sm">
+              경미 C · PID 전열 패턴
+            </span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">09:12:10</span>
+</div>
+<div class="font-headline-sm text-headline-sm text-on-surface tracking-tight">
+            #SH3-JB18-STR01-M01
+          </div>
+<div class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+            INV05 · 음극단 누설 전류 의심
+          </div>
+<div class="flex items-center justify-between mt-2 pt-1.5 border-t border-outline-variant/30 text-label-sm font-label-sm">
+<div class="text-on-surface-variant font-semibold">T_max 43.6℃ (ΔT +4.1℃)</div>
+<div class="text-on-surface-variant">추적 관찰</div>
+</div>
+</div>
+</div>
+<!-- Quick Summary Metric Bar -->
+<div class="bg-surface-container-lowest p-space-sm rounded flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant">
+<span>미확인 이상: <b class="text-hotspot-crimson">14건</b></span>
+<span>AI 승인 대기: <b class="text-inference-cyan">6건</b></span>
+</div>
+</aside>
+<!-- CENTER PANEL: Dual Multimodal Viewer (Col 6) -->
+<main class="col-span-12 lg:col-span-6 flex flex-col gap-space-sm">
+<!-- Target Module Identity Banner -->
+<div class="flex flex-wrap items-center justify-between gap-space-sm bg-surface-container-low px-space-md py-space-sm rounded-lg">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-inference-cyan">adjust</span>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-headline-md text-headline-md text-on-surface tracking-tight">#SH3-INV04-JB14-STR08-M12</span>
+<span class="px-1.5 py-0.5 bg-hotspot-crimson/20 text-hotspot-crimson font-label-sm text-label-sm rounded font-semibold">모듈 12번 셀 핫스팟</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">제원: 한화 Q.PEAK DUO L-G8.2 425Wp · 하프컷 144셀 (72×2)</span>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface" title="전체화면" type="button">
+<span class="material-symbols-outlined text-[18px]">fullscreen</span>
+</button>
+<button class="p-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface" title="3D 결함 위치 뷰어 연동" type="button">
+<span class="material-symbols-outlined text-[18px]">view_in_ar</span>
+</button>
+</div>
+</div>
+<!-- Dual Split Thermal & Optical Viewer Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-sm">
+<!-- View 1: Calibrated Radiometric Thermal (IR) -->
+<div class="relative bg-surface-container-lowest rounded-lg overflow-hidden flex flex-col group">
+<!-- View Label & HUD Overlay Top -->
+<div class="absolute top-2 left-2 z-20 flex items-center gap-1.5 bg-surface-container-lowest/80 backdrop-blur-md px-2 py-1 rounded">
+<span class="w-2 h-2 rounded-full bg-hotspot-crimson animate-pulse"></span>
+<span class="font-label-sm text-label-sm text-on-surface font-semibold">RADIOMETRIC THERMAL (IR)</span>
+<span class="text-[9px] text-inference-cyan font-label-sm">Ironbow 16-bit</span>
+</div>
+<div class="absolute top-2 right-2 z-20 bg-surface-container-lowest/80 backdrop-blur-md px-2 py-1 rounded text-right">
+<div class="font-label-sm text-label-sm text-hotspot-crimson font-semibold">MAX 62.4℃</div>
+<div class="text-[9px] text-on-surface-variant font-label-sm">AVG 38.2℃ · MIN 28.1℃</div>
+</div>
+<!-- Thermal Synthetic Surface (Ironbow Visualizer) -->
+<div class="relative w-full aspect-[4/3] bg-gradient-to-tr from-[#0a0026] via-[#75116e] to-[#ffaa00] flex items-center justify-center overflow-hidden">
+<!-- Simulated Solar Cell Grid Overlay -->
+<div class="absolute inset-0 grid grid-cols-6 grid-rows-12 opacity-35">
+<div class="border-b border-r border-white/20"></div><div class="border-b border-r border-white/20"></div>
+<div class="border-b border-r border-white/20"></div><div class="border-b border-r border-white/20"></div>
+<div class="border-b border-r border-white/20"></div><div class="border-b border-white/20"></div>
+<div class="border-b border-r border-white/20"></div><div class="border-b border-r border-white/20"></div>
+<div class="border-b border-r border-white/20"></div><div class="border-b border-r border-white/20"></div>
+<div class="border-b border-r border-white/20"></div><div class="border-b border-white/20"></div>
+<div class="border-b border-r border-white/20"></div><div class="border-b border-r border-white/20"></div>
+<div class="border-b border-r border-white/20"></div><div class="border-b border-r border-white/20"></div>
+<div class="border-b border-r border-white/20"></div><div class="border-b border-white/20"></div>
+<div class="border-b border-r border-white/20"></div><div class="border-b border-r border-white/20"></div>
+<div class="border-b border-r border-white/20"></div><div class="border-b border-r border-white/20"></div>
+<div class="border-b border-r border-white/20"></div><div class="border-b border-white/20"></div>
+</div>
+<!-- Hotspot Radiant Bloom Simulation -->
+<div class="absolute top-[32%] left-[48%] -translate-x-1/2 -translate-y-1/2 w-28 h-28 bg-[#ffffff] rounded-full blur-xl opacity-90 mix-blend-screen pointer-events-none"></div>
+<div class="absolute top-[32%] left-[48%] -translate-x-1/2 -translate-y-1/2 w-44 h-44 bg-[#ff3b00] rounded-full blur-2xl opacity-70 mix-blend-color-dodge pointer-events-none"></div>
+<!-- Hairline Crosshair Targeting UI on Anomaly Core -->
+<div class="absolute top-[32%] left-[48%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center pointer-events-none">
+<!-- Precision Reticle -->
+<div class="relative w-12 h-12 flex items-center justify-center">
+<div class="absolute w-full h-[1px] bg-inference-cyan shadow-[0_0_8px_#06B6D4]"></div>
+<div class="absolute h-full w-[1px] bg-inference-cyan shadow-[0_0_8px_#06B6D4]"></div>
+<div class="w-4 h-4 rounded-full border border-inference-cyan animate-spin"></div>
+<div class="w-1.5 h-1.5 bg-hotspot-crimson rounded-full"></div>
+</div>
+<!-- Floating Thermal Pill -->
+<div class="mt-1 bg-surface-container-lowest/90 px-2 py-0.5 rounded shadow-lg flex items-center gap-1.5 whitespace-nowrap">
+<span class="text-hotspot-crimson font-headline-sm text-headline-sm">62.4℃</span>
+<span class="text-nominal-emerald font-label-sm text-label-sm">(ΔT +14.2℃)</span>
+</div>
+</div>
+<!-- Substring Section Split Line Indicators (3-split bypass segments) -->
+<div class="absolute inset-x-0 top-1/3 h-0.5 bg-inference-cyan/40 border-b border-dashed border-inference-cyan"></div>
+<div class="absolute inset-x-0 top-2/3 h-0.5 bg-inference-cyan/40 border-b border-dashed border-inference-cyan"></div>
+<!-- Temperature Calibration Gradient Bar -->
+<div class="absolute bottom-2 left-2 right-2 h-2 rounded bg-gradient-to-r from-[#0a0026] via-[#75116e] via-[#ff4500] to-[#ffffff] opacity-80 flex items-center justify-between px-1">
+<span class="text-[8px] text-white font-label-sm">25℃</span>
+<span class="text-[8px] text-white font-label-sm">45℃</span>
+<span class="text-[8px] text-white font-label-sm">65℃+</span>
+</div>
+</div>
+<!-- Bottom Micro Metadata Strip -->
+<div class="px-space-sm py-1.5 bg-surface-container flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant">
+<span>방사율 ε: 0.92 (Glass PV)</span>
+<span>대기 반사온도: 23.5℃</span>
+<span>센서: FLIR Boson 640</span>
+</div>
+</div>
+<!-- View 2: High-Resolution Optical RGB (Matched Crop) -->
+<div class="relative bg-surface-container-lowest rounded-lg overflow-hidden flex flex-col group">
+<!-- View Label & Overlay Top -->
+<div class="absolute top-2 left-2 z-20 flex items-center gap-1.5 bg-surface-container-lowest/80 backdrop-blur-md px-2 py-1 rounded">
+<span class="w-2 h-2 rounded-full bg-inference-cyan"></span>
+<span class="font-label-sm text-label-sm text-on-surface font-semibold">SYNCHRONIZED RGB (OPTICAL)</span>
+<span class="text-[9px] text-nominal-emerald font-label-sm">0.8 cm/GSD</span>
+</div>
+<!-- Overlay Toggle Switch Pill -->
+<div class="absolute top-2 right-2 z-20 flex items-center gap-1 bg-surface-container-lowest/80 backdrop-blur-md px-2 py-0.5 rounded">
+<span class="text-[9px] text-on-surface-variant font-label-sm">AI 하이라이트</span>
+<span class="w-2 h-2 rounded-full bg-nominal-emerald"></span>
+</div>
+<!-- Optical Image with Highlighting Overlay -->
+<div class="relative w-full aspect-[4/3] bg-surface-container-high overflow-hidden flex items-center justify-center">
+<!-- Simulated Solar Glass Surface Placeholder -->
+<img class="w-full h-full object-cover" data-alt="Macro close-up photograph of a modern high-efficiency monocrystalline solar panel surface showing crisp dark-blue cell busbars and metallic grid fingers under sharp natural sunlight. A visible localized bird droppings contamination stain is sharply focused on one specific cell, matching an industrial drone diagnostic visual." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCD9GQP8C_lvlPHvzTKetCGG_FAvcBGrGOCTL2xcWYaTRp_Y6Yogb7DdHEX7EQ_yubwo2oh1b1BAuD-LBwEW3fv7lEyRhVhsjNl1_hLepy8DGwovLj4LQd1xRv_Kkfq-UG4-thzY6z6_F8tdLVOlUERsVjhXlo-QxO4XlJuYYUkQ11vLcBJGtHbC-1dOb2JLpwE4oC8j4DxaV5dNHqVzwZ5IcN-gOLpJKK7-5CFll6vIQt2Qiw_ctJf"/>
+<!-- AI Contour Overlay: Bird Droppings Annotation Box -->
+<div class="absolute top-[32%] left-[48%] -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+<!-- Bounding Vector HUD -->
+<div class="w-16 h-16 border-2 border-dashed border-caution-yellow rounded-sm relative flex items-center justify-center shadow-[0_0_12px_rgba(251,191,36,0.3)]">
+<!-- Corner Ticks -->
+<div class="absolute -top-1 -left-1 w-2 h-2 border-t-2 border-l-2 border-caution-yellow"></div>
+<div class="absolute -top-1 -right-1 w-2 h-2 border-t-2 border-r-2 border-caution-yellow"></div>
+<div class="absolute -bottom-1 -left-1 w-2 h-2 border-b-2 border-l-2 border-caution-yellow"></div>
+<div class="absolute -bottom-1 -right-1 w-2 h-2 border-b-2 border-r-2 border-caution-yellow"></div>
+<!-- White Contamination Core Indicator -->
+<div class="w-6 h-6 rounded-full bg-white/40 border border-white backdrop-blur-[1px]"></div>
+</div>
+<div class="absolute -bottom-5 left-1/2 -translate-x-1/2 bg-surface-container-lowest/90 px-1.5 py-0.5 rounded text-[9px] text-caution-yellow font-label-sm whitespace-nowrap">
+                국부 오염물 (3.2cm)
+              </div>
+</div>
+<!-- Optical Grid Lines (Registered with IR view) -->
+<div class="absolute inset-0 grid grid-cols-6 grid-rows-12 opacity-15 pointer-events-none">
+<div class="border-b border-r border-white"></div><div class="border-b border-r border-white"></div>
+<div class="border-b border-r border-white"></div><div class="border-b border-r border-white"></div>
+<div class="border-b border-r border-white"></div><div class="border-b border-white"></div>
+<div class="border-b border-r border-white"></div><div class="border-b border-r border-white"></div>
+<div class="border-b border-r border-white"></div><div class="border-b border-r border-white"></div>
+<div class="border-b border-r border-white"></div><div class="border-b border-white"></div>
+</div>
+</div>
+<!-- Bottom Micro Metadata Strip -->
+<div class="px-space-sm py-1.5 bg-surface-container flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant">
+<span>셔터: 1/1250s · ISO 100</span>
+<span>조도: 680 W/m² (일사량 정상)</span>
+<span>카메라: Sony RX0 II 20MP</span>
+</div>
+</div>
+</div>
+<!-- Sync Controls & Histogram Toolbar -->
+<div class="flex flex-col md:flex-row items-center justify-between gap-space-sm bg-surface-container-low p-space-sm rounded-lg">
+<!-- Zoom & View Tools -->
+<div class="flex items-center gap-1">
+<span class="text-on-surface-variant font-label-sm text-label-sm mr-2">배율:</span>
+<button class="px-2 py-1 rounded font-label-sm text-label-sm bg-surface-container text-on-surface hover:bg-surface-container-high" type="button">1x</button>
+<button class="px-2 py-1 rounded font-label-sm text-label-sm bg-primary-container text-on-primary-container font-semibold" type="button">2x</button>
+<button class="px-2 py-1 rounded font-label-sm text-label-sm bg-surface-container text-on-surface hover:bg-surface-container-high" type="button">4x</button>
+<div class="w-px h-4 bg-outline-variant mx-1"></div>
+<button class="flex items-center gap-1 px-2 py-1 rounded font-label-sm text-label-sm bg-surface-container text-on-surface hover:bg-surface-container-high" type="button">
+<span class="material-symbols-outlined text-[14px]">layers</span>
+<span>서브스트링 3분할</span>
+</button>
+<button class="flex items-center gap-1 px-2 py-1 rounded font-label-sm text-label-sm bg-surface-container text-on-surface hover:bg-surface-container-high" type="button">
+<span class="material-symbols-outlined text-[14px]">compare</span>
+<span>알파 블렌딩 50%</span>
+</button>
+</div>
+<!-- Inline Temperature Histogram Micro Chart -->
+<div class="flex items-center gap-space-sm w-full md:w-auto">
+<div class="flex flex-col text-right">
+<span class="font-label-sm text-label-sm text-on-surface-variant">온도 분포 히스토그램</span>
+<span class="text-[10px] text-hotspot-crimson font-label-md">우측 꼬리 이상치(62.4℃) 감지</span>
+</div>
+<!-- Sparkline Histogram SVG -->
+<svg class="w-32 h-7 bg-surface-container rounded p-0.5 text-inference-cyan" fill="none" viewbox="0 0 100 24">
+<path d="M 0 22 L 10 21 L 20 20 L 30 18 L 40 12 L 50 4 L 60 7 L 70 14 L 80 19 L 90 20 L 95 15 L 100 22 Z" fill="currentColor" fill-opacity="0.2"></path>
+<path d="M 0 22 L 10 21 L 20 20 L 30 18 L 40 12 L 50 4 L 60 7 L 70 14 L 80 19 L 90 20 L 95 15 L 100 22" stroke="currentColor" stroke-width="1.5"></path>
+<!-- Hotspot Anomaly Bar -->
+<line stroke="#EF4444" stroke-width="2" x1="95" x2="95" y1="2" y2="22"></line>
+<circle cx="95" cy="5" fill="#EF4444" r="2"></circle>
+</svg>
+</div>
+</div>
+<!-- Historical Evolution & Multi-temporal Reference Strip -->
+<div class="bg-surface-container-low p-space-sm rounded-lg flex flex-col gap-space-xs">
+<div class="flex items-center justify-between font-label-sm text-label-sm">
+<div class="flex items-center gap-1.5 text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-inference-cyan">history</span>
+<span class="font-semibold">시계열 이력 분석 (Multi-Temporal Change Detection)</span>
+</div>
+<span class="text-nominal-emerald font-semibold">1개월 전 대비 신규 결함 (+100% ΔT 편차)</span>
+</div>
+<div class="grid grid-cols-3 gap-2 mt-1">
+<div class="bg-surface-container p-2 rounded flex flex-col gap-0.5">
+<span class="text-on-surface-variant text-[10px] font-label-sm">2024-04-12 (이전 점검)</span>
+<span class="text-on-surface font-headline-sm text-headline-sm">정상 (36.1℃)</span>
+<span class="text-nominal-emerald text-[10px] font-label-sm">오염 없음 · ΔT 0.8℃</span>
+</div>
+<div class="bg-surface-container p-2 rounded flex flex-col gap-0.5">
+<span class="text-on-surface-variant text-[10px] font-label-sm">2024-05-02 (중간 관측)</span>
+<span class="text-on-surface font-headline-sm text-headline-sm">미세 오염 (41.0℃)</span>
+<span class="text-caution-yellow text-[10px] font-label-sm">조류 비행 빈발 구간</span>
+</div>
+<div class="bg-surface-container-high border-l-2 border-hotspot-crimson p-2 rounded flex flex-col gap-0.5">
+<span class="text-hotspot-crimson text-[10px] font-label-sm">2024-05-18 (금일 관측)</span>
+<span class="text-hotspot-crimson font-headline-sm text-headline-sm">심각 핫스팟 (62.4℃)</span>
+<span class="text-hotspot-crimson text-[10px] font-label-sm">열화 지속 시 영구 손상 우려</span>
+</div>
+</div>
+</div>
+</main>
+<!-- RIGHT PANEL: AI Cause Inference Agent & Action Card (Col 3) -->
+<aside class="col-span-12 lg:col-span-3 flex flex-col gap-space-sm">
+<!-- Inference Core Card -->
+<div class="bg-surface-container-low p-space-md rounded-lg flex flex-col gap-space-sm shadow-sm relative overflow-hidden">
+<!-- Background subtle AI pulse indicator -->
+<div class="flex items-center justify-between pb-space-xs border-b border-outline-variant/30">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-inference-cyan text-[20px]">smart_toy</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">AI 원인 추정 에이전트</span>
+</div>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-inference-cyan/15 text-inference-cyan font-semibold">
+            v4.2 MultiModal
+          </span>
+</div>
+<!-- Primary Inferred Cause & Confidence -->
+<div class="bg-surface-container p-space-sm rounded-lg flex flex-col gap-1 border-l-4 border-solar-amber">
+<div class="flex items-center justify-between">
+<span class="text-on-surface-variant font-label-sm text-label-sm uppercase">추정 원인 1순위</span>
+<span class="text-solar-amber font-headline-sm text-headline-sm font-bold">88.4% 신뢰도</span>
+</div>
+<div class="text-on-surface font-headline-sm text-headline-sm mt-0.5">
+            오염에 의한 부분 음영 (새똥/퇴적 분변)
+          </div>
+<div class="text-body-sm font-body-sm text-on-surface-variant leading-relaxed">
+            모듈 보호 바이패스 다이오드가 동작하지 않는 셀 단위 역바이어스 과열 현상으로 진단됨.
+          </div>
+</div>
+<!-- Rationales & Evidence Breakdown (기획서 3.4/3.5절 충족) -->
+<div class="flex flex-col gap-space-xs">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">추론 근거 (Reasoning Chains)</span>
+<!-- Evidence 1 -->
+<div class="p-2 rounded bg-surface-container-lowest flex items-start gap-2">
+<span class="material-symbols-outlined text-hotspot-crimson text-[18px] shrink-0 mt-0.5">thermostat</span>
+<div class="flex flex-col">
+<span class="text-on-surface font-label-md text-label-md">국부 셀 핫스팟 (T_max = 62.4℃)</span>
+<span class="text-on-surface-variant text-[11px] font-body-sm">
+                주변 스트링 평균 대비 ΔT +14.2℃ 편차를 보이며 단일 156mm 하프컷 셀에 국한됨.
+              </span>
+</div>
+</div>
+<!-- Evidence 2 -->
+<div class="p-2 rounded bg-surface-container-lowest flex items-start gap-2">
+<span class="material-symbols-outlined text-inference-cyan text-[18px] shrink-0 mt-0.5">center_focus_strong</span>
+<div class="flex flex-col">
+<span class="text-on-surface font-label-md text-label-md">가시광 정합 영상 픽셀 일치</span>
+<span class="text-on-surface-variant text-[11px] font-body-sm">
+                동일 지리좌표에 3.2cm 백색 석회질 조류 분변 퇴적 확인 (Sub-pixel 오차: 0.42px).
+              </span>
+</div>
+</div>
+<!-- Evidence 3 -->
+<div class="p-2 rounded bg-surface-container-lowest flex items-start gap-2">
+<span class="material-symbols-outlined text-nominal-emerald text-[18px] shrink-0 mt-0.5">wb_sunny</span>
+<div class="flex flex-col">
+<span class="text-on-surface font-label-md text-label-md">태양 반사 왜곡(Glint) 배제</span>
+<span class="text-on-surface-variant text-[11px] font-body-sm">
+                드론 연속 촬영 3개 프레임(방위각 120°~135°) 간 동일 위치 고정 발열 검증 완료.
+              </span>
+</div>
+</div>
+</div>
+<!-- Recommended Operational Action -->
+<div class="bg-surface-container-high p-space-sm rounded-lg flex flex-col gap-1.5">
+<div class="flex items-center justify-between text-label-sm font-label-sm">
+<span class="text-on-surface font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-inference-cyan text-[16px]">build_circle</span>
+              권장 대응 조치
+            </span>
+<span class="text-solar-amber font-semibold">발전 손실 약 18.5W/h</span>
+</div>
+<div class="text-on-surface font-body-sm text-body-sm leading-snug">
+            현장 표면 고압 수세 및 연마포 건조 세척 후 휴대용 열화상 카메라 재촬영 검증 권고.
+          </div>
+<div class="flex items-center justify-between pt-1 border-t border-outline-variant/30 text-[10px] text-on-surface-variant font-label-sm">
+<span>우선순위: 중간 (Medium)</span>
+<span>예상 소요시간: 15분</span>
+</div>
+</div>
+<!-- Privacy & Security Compliance Badge (기획서 3.5절 규정) -->
+<div class="bg-surface-container-lowest p-2 rounded flex items-start gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-inference-cyan text-[16px] shrink-0 mt-0.5">verified_user</span>
+<div class="text-[10px] font-body-sm leading-tight">
+<span class="text-on-surface font-semibold">보안 및 익명화 규정 준수 완료:</span>
+            외부 멀티모달 LLM 전송 시 고정밀 RTK GPS 좌표 제거 및 인근 설비 크롭 익명화 필터가 적용되었습니다.
+          </div>
+</div>
+<!-- Human-in-the-loop (HITL) Action Buttons -->
+<div class="flex flex-col gap-1.5 pt-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">운영자 최종 판정 (Human-in-the-loop)</span>
+<div class="grid grid-cols-2 gap-1.5">
+<!-- Operator Approval -->
+<button class="py-2 px-space-sm bg-primary-container hover:bg-primary text-on-primary-container rounded font-label-md text-label-md flex items-center justify-center gap-1 transition-all" type="button">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+<span>원인 판정 승인</span>
+</button>
+<!-- Modify Inference -->
+<button class="py-2 px-space-sm bg-surface-container hover:bg-surface-container-high text-on-surface rounded font-label-md text-label-md flex items-center justify-center gap-1 transition-all" type="button">
+<span class="material-symbols-outlined text-[16px]">edit_note</span>
+<span>원인 수동 수정</span>
+</button>
+</div>
+<!-- Dispatch Work Order Trigger -->
+<button class="w-full py-2 px-space-sm bg-surface-container hover:bg-surface-container-high text-inference-cyan rounded font-label-md text-label-md flex items-center justify-center gap-1.5 transition-all" type="button">
+<span class="material-symbols-outlined text-[16px]">assignment_turned_in</span>
+<span>현장 세척 작업지시서 즉시 발행</span>
+</button>
+</div>
+</div>
+<!-- Module Physical Specifications Context Inset -->
+<div class="bg-surface-container-low p-space-sm rounded-lg flex flex-col gap-1 text-on-surface-variant">
+<span class="font-label-sm text-label-sm text-on-surface uppercase font-semibold">설비 물리 제원 연동 데이터</span>
+<div class="grid grid-cols-2 gap-1.5 text-[11px] font-body-sm mt-1">
+<div><span class="text-outline">제조사:</span> 한화솔루션 Q-CELLS</div>
+<div><span class="text-outline">준공일:</span> 2021년 09월</div>
+<div><span class="text-outline">접속함 ID:</span> SH3-INV04-JB14</div>
+<div><span class="text-outline">스트링 전압:</span> 742.8 V (정상)</div>
+</div>
+</div>
+</aside>
+</div>
+</div></main></div></body></html>
