@@ -6,6 +6,10 @@ decides what to do with a drawing module that was photographed several times:
 * Views near the frame edge read wrong (oblique reflection), and boxes that sit across a
   module gap mix in a neighbour (cell_fit); when a module has a trusted view, such views
   do not vote.
+* Frames taken while the drone turns between flight lines never vote: the airframe tilts
+  and the gimbal is still settling, so both position and temperature are off (on the
+  2025-10-30 flight 3% of the views held 97% of the misplaced boxes and were flagged 13
+  times as often). A module seen only in such frames is 'retake', not normal.
 * 점검 대상 (inspect): flagged in at least two usable views and in at least half of them,
   or one strong signal. 재확인 (recheck): flagged, but only once or in a minority of views.
   Repetition removes reflections and glints; it does not remove shadows, which stay put
@@ -29,6 +33,24 @@ WIDE_MIN_NEIGHBOURS = 8
 WIDE_FLAG_C = 3.0         # same threshold as the in-frame neighbour rule
 STRONG_WIDE_C = 5.0
 STRING_FLAG_C = 2.0
+TURN_LINE_FRAMES = 2      # a flight line this short is the turn itself
+TURN_OFF_AXIS_DEG = 10    # heading this far from the main flight axis
+
+
+def turn_frames(obs):
+    """Image ids taken while turning: very short flight lines or a heading off the main axis."""
+    from .site_registration import flight_lines
+    if 'gimbal_yaw' not in obs:
+        return set()
+    names = sorted(obs.image_id.dropna().unique())
+    lines = flight_lines(obs, {n: None for n in names})
+    if not lines:
+        return set()
+    yaw = obs.groupby('image_id').gimbal_yaw.first()
+    axis = (yaw.dropna() % 180).round().mode()
+    axis = float(axis.iloc[0]) if len(axis) else 0.0
+    off = lambda y: abs((y - axis + 90) % 180 - 90) > TURN_OFF_AXIS_DEG
+    return {n for line in lines for n in line if len(line) <= TURN_LINE_FRAMES or off(yaw.get(n, axis))}
 
 
 def view_radius(frame):
@@ -56,6 +78,8 @@ def judge(linked, catalog):
     catalog: module_id, east_m, north_m for every drawing module.
     """
     obs = linked[linked.drawing_module_id.notna()].copy()
+    turning = turn_frames(obs)
+    obs['turn'] = obs.image_id.isin(turning)
     obs['radius'] = view_radius(obs)
     obs['edge'] = obs.radius > EDGE_RADIUS
     obs['flagged'] = obs.final != 'normal'
@@ -65,19 +89,22 @@ def judge(linked, catalog):
     trusted = ~obs.edge
     if 'cell_fit' in obs:
         trusted &= obs.cell_fit.isin(TRUSTED_FITS) | obs.cell_fit.isna()
-    obs['trusted'] = trusted
+    obs['trusted'] = trusted & ~obs.turn
     has_trusted = obs.groupby('drawing_module_id').trusted.transform('any')
-    obs['votes'] = obs.trusted | ~has_trusted
+    obs['votes'] = (obs.trusted | ~has_trusted) & ~obs.turn
 
     usable = obs[obs.votes]
     modules = obs.groupby('drawing_module_id').agg(
         string_id=('string_id', 'first'), jb_id=('jb_id', 'first'), inverter_id=('inverter_id', 'first'),
-        observations=('image_id', 'size'), flagged_all=('flagged', 'sum')).reset_index()
+        observations=('image_id', 'size'), flagged_all=('flagged', 'sum'),
+        turn_views=('turn', 'sum')).reset_index()
     votes = usable.groupby('drawing_module_id').agg(
         usable_views=('image_id', 'size'), flagged_votes=('flagged', 'sum'),
         relative_temp=('relative_temp', 'median'), max_prob_abnormal=('prob_abnormal', 'max'),
         max_delta_temp=('delta_temp', 'max'), only_untrusted=('trusted', lambda s: not s.any())).reset_index()
     modules = modules.merge(votes, on='drawing_module_id', how='left')
+    modules[['usable_views', 'flagged_votes']] = modules[['usable_views', 'flagged_votes']].fillna(0)  # turn-only modules
+    modules['only_untrusted'] = modules['only_untrusted'].eq(True)
 
     # Wide neighbour comparison on the drawing, across frames.
     xy = catalog.set_index('module_id')[['east_m', 'north_m']]
@@ -98,14 +125,17 @@ def judge(linked, catalog):
         | (modules.max_delta_temp >= STRONG_DELTA_TEMP_C) | (modules.wide_delta >= STRONG_WIDE_C)
     consistent = (modules.flagged_votes >= MIN_VOTES) & (modules.flagged_votes * 2 >= modules.usable_views)
     flagged = (modules.flagged_votes > 0) | modules.wide_flag
-    modules['verdict'] = np.select([flagged & (consistent | strong), flagged], ['inspect', 'recheck'], 'normal')
+    retake = modules.turn_views >= modules.observations
+    modules['verdict'] = np.select([retake, flagged & (consistent | strong), flagged], ['retake', 'inspect', 'recheck'], 'normal')
     reasons = []
     for row in modules.itertuples():
         why = []
         if row.flagged_votes:
             why.append(f'{int(row.flagged_votes)}/{int(row.usable_views)}회 후보' + (' (가장자리·어긋난 관측만)' if row.only_untrusted else ''))
-        if row.flagged_all > row.flagged_votes:
-            why.append(f'가장자리·어긋난 관측 {int(row.flagged_all - row.flagged_votes)}회는 판정에서 제외')
+        if row.verdict == 'retake':
+            why.append(f'회전 구간에서만 {int(row.observations)}회 촬영 · 재촬영 필요')
+        elif row.flagged_all > row.flagged_votes:
+            why.append(f'가장자리·어긋난·회전 구간 관측 {int(row.flagged_all - row.flagged_votes)}회는 판정에서 제외')
         if row.wide_flag:
             why.append(f'주변 {int(row.wide_neighbours)}장 대비 +{row.wide_delta:.1f}℃')
         if row.verdict == 'inspect' and not (row.flagged_votes >= MIN_VOTES and row.flagged_votes * 2 >= row.usable_views):
@@ -125,4 +155,5 @@ def judge(linked, catalog):
             if len(others) >= 2 and strings.at[index, 'modules_observed'] >= 5:
                 strings.at[index, 'string_delta'] = strings.at[index, 'relative_temp'] - others.relative_temp.median()
     strings['string_flag'] = strings.string_delta >= STRING_FLAG_C
+    modules.attrs['turn_frames'] = sorted(turning)
     return modules, strings

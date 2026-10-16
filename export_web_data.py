@@ -13,7 +13,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parent
 RANK = {'abnormal': 2, 'attention': 1, 'normal': 0}
 RGB_SIZE = (4032, 3024)
-VERDICT_STATE = {'normal': 1, 'recheck': 2, 'inspect': 3}  # map.js state: 0 unobserved
+VERDICT_STATE = {'normal': 1, 'recheck': 2, 'inspect': 3, 'retake': 0}  # map.js state: 0 unobserved (retake: seen only while turning)
 VERDICT_RANK = {'inspect': 2, 'recheck': 1, 'normal': 0}
 MASTER_COLUMNS = ['image_id', 'final', 'hs_is_hotspot', 'neighbor_flag', 'structure_status', 'capture_condition',
                   'camera_to_surface_m', 'gsd_x_m_per_px', 'irradiance_w_m2']
@@ -131,6 +131,39 @@ def module_pattern(observations):
             'edge_only': all(o.get('edge') for o in flagged) and central_normal}
 
 
+def read_summary(folder):
+    path = folder / 'summary.json'
+    return json.loads(path.read_text(encoding='utf-8')) if path.is_file() else {}
+
+
+def read_diagnoses(folder):
+    """Cause candidates per flagged module, trimmed to what the console shows."""
+    path = folder / 'diagnoses.json'
+    if not path.is_file():
+        return []
+    keep = ('cause', 'confidence', 'action', 'urgency', 'kind', 'safety', 'evidence', 'llm_reason')
+    return [{'id': d['module_id'], 'primary': d['primary'], 'action': d['action'], 'urgency': d['urgency'],
+             'kind': d['kind'], 'source': d['source'], 'needs_review': d['needs_review'], 'exclude': d['exclude'],
+             'safety': d['safety'], 'appearance': d.get('appearance'), 'loss_w': d.get('loss_w'),
+             'ai_downgraded': d.get('ai_downgraded'), 'ai_audit': d.get('ai_audit'), 'field_kind_kept': d.get('field_kind_kept'),
+             'rule_primary': d.get('rule_primary'),
+             'candidates': [{k: c.get(k) for k in keep} for c in d['candidates']]}
+            for d in json.loads(path.read_text(encoding='utf-8'))]
+
+
+def read_kb():
+    from pv_inspector.diagnosis import load_kb
+    kb = load_kb()
+    return {'version': kb['version'], 'causes': [r['cause'] for r in kb['rules']],
+            'kinds': {k: v['label'] for k, v in kb['kinds'].items()},
+            'rules': [{k: r[k] for k in ('observation', 'cause', 'action', 'urgency')} for r in kb['rules']]}
+
+
+def read_orders(folder):
+    path = folder / 'orders.json'
+    return json.loads(path.read_text(encoding='utf-8')) if path.is_file() else []
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--analysis', default='results/shinan3_full_20261030')
@@ -139,6 +172,7 @@ def main():
     parser.add_argument('--alignment', default='results/ir_rgb_alignment/alignment.json')
     parser.add_argument('--patterns', default='results/anomaly_patterns/anomaly_patterns.csv')
     parser.add_argument('--verdicts', default='results/module_verdicts')
+    parser.add_argument('--orders', default='results/orders', help='generate_orders.py 출력 (원인 추정·작업지시)')
     args = parser.parse_args()
     alignment_path = ROOT / args.alignment
     alignment = json.loads(alignment_path.read_text(encoding='utf-8')) if alignment_path.is_file() else None
@@ -179,7 +213,7 @@ def main():
         modules['verdict_reason'] = ''
     modules['verdict'] = modules['verdict'].fillna('normal')
     string_summary = string_summary.merge(string_verdicts[['string_id', 'string_delta', 'string_flag']], on='string_id', how='left')
-    flagged = modules[modules['verdict'] != 'normal']
+    flagged = modules[modules['verdict'].isin(['inspect', 'recheck'])]
     inverters = {}
     for item in strings:
         jb = inverters.setdefault(item['inverter'], {}).setdefault(item['jb'], {'id': item['jb'], 'strings': 0, 'modules': 0})
@@ -283,8 +317,11 @@ def main():
         'strings_flagged': [{k: clean(v) for k, v in row.items()} for row in string_summary[string_summary['string_flag'] == True][
             ['inverter_id', 'jb_id', 'string_id', 'string_delta', 'modules_observed']].to_dict('records')],
         'pattern_types': pd.Series([c.get('type') for c in candidates if c.get('type')]).value_counts().to_dict() if candidates else {},
-        'diagnoses': [],
-        'work_orders': [],
+        'diagnoses': read_diagnoses(ROOT / args.orders),
+        'work_orders': read_orders(ROOT / args.orders),
+        'flight_id': read_summary(ROOT / args.orders).get('flight_id'),
+        'orders_summary': read_summary(ROOT / args.orders),
+        'kb': read_kb(),
         'metrics': {'false_alarm_rate': None, 'miss_rate': None, 'cause_match_rate': None},
     }
     output.mkdir(parents=True, exist_ok=True)

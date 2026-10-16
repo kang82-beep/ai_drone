@@ -28,10 +28,12 @@ def main():
     modules, strings = judge(linked, catalog)
     modules.to_csv(output / 'module_verdicts.csv', index=False, encoding='utf-8-sig')
     strings.to_csv(output / 'string_verdicts.csv', index=False, encoding='utf-8-sig')
+    (output / 'turn_frames.json').write_text(json.dumps(modules.attrs.get('turn_frames', [])), encoding='utf-8')
     flagged_before = int((modules.flagged_all > 0).sum())
     print(json.dumps({'modules_observed': len(modules), 'flagged_any_view': flagged_before,
                       'cell_fit': linked['cell_fit'].value_counts().to_dict(),
                       'verdicts': modules.verdict.value_counts().to_dict(),
+                      'turn_frames': len(modules.attrs.get('turn_frames', [])),
                       'wide_flag': int(modules.wide_flag.sum()),
                       'wide_delta_quantiles': modules.wide_delta.quantile([.01, .5, .99]).round(2).to_dict(),
                       'strings_flagged': strings.loc[strings.string_flag, ['string_id', 'string_delta']].round(2).to_dict('records')},

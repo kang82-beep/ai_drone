@@ -15,7 +15,6 @@ const state = {
   theme: store.get('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
   filter: 'all', query: '', module: null, obs: 0, zoom: 1, layer: 'final', lightbox: false,
   stage: store.get('stage') === '3d' ? '3d' : 'map',
-  orders: JSON.parse(store.get('orders') || '{}'),
   reviews: JSON.parse(store.get('reviews') || '{}'),
 };
 
@@ -71,8 +70,7 @@ const TYPE = { single_cell: '단일 셀 핫스팟', multi_cell: '다중 셀 핫�
   none: '뚜렷한 형상 없음', unreadable: '형상 판독 불가' };
 const typeChip = type => type ? chip(TYPE[type] || type, ['single_cell', 'multi_cell', 'diode', 'whole_module'].includes(type) ? 'crit' : type === 'none' || type === 'unreadable' ? '' : 'info') : '';
 const REASON = { hotspot: '국부 고온', delta_temperature: '모듈 내 온도차', neighbor_delta: '주변 대비 고온', hierarchical: '분류 모델' };
-const NAV = [['overview', '현황', 'map'], ['pipeline', '파이프라인', 'flow'], ['orders', '점검 목록', 'task']];
-const ORDER_STATUS = ['점검 대기', '점검 완료', '조치 완료', '종결'];
+const NAV = [['overview', '현황', 'map'], ['pipeline', '파이프라인', 'flow'], ['orders', '작업지시', 'task']];
 const CAUSES = ['오염에 의한 부분 음영', '셀 균열·셀 불량', '바이패스 다이오드 고장', '커넥터 불량·모듈 개방', '스트링 단선·퓨즈 용단', '식생·구조물 음영', '태양 반사', '이상 없음', '원인 판별 어려움'];
 const ACTIONS = ['조치 없음', '청소', '제초', '모듈 교체 접수', '커넥터·퓨즈 교체', '재촬영 필요'];
 // 과제_기획서.md 2절의 구성요소별 현재 상태.
@@ -82,8 +80,9 @@ const COMPONENTS = [
   ['설비 주소 연결', 'RTK 투영 + 카메라 보정 + 비행 줄 연결', 'part', S.registration.lines ? `비행 줄 ${S.registration.lines.resolved}/${S.registration.lines.total} 결정 · 측량 검증 전` : '한 칸 어긋남 미해결'], ['다중 촬영 통합', '규칙', 'done', '다수결 판정, 가장자리 관측 제외'],
   ['주변 대비 온도차', '규칙', 'done', ''], ['접속반·인버터 단위 비교', '규칙', 'part', '반경 6m 이웃·스트링 비교, 인버터 단위는 전체 분석 후'],
   ['이상 탐지', '규칙 + EfficientNet-B3', 'done', '표시 영상 기반'], ['이상 유형 분류', '형상 규칙 (온도 배열)', 'part', '1차 규칙 · 현장 검증 전'],
-  ['원인 추정', 'AI 에이전트', 'none', ''], ['손실·우선순위 산정', '규칙', 'none', ''],
-  ['작업지시 생성', 'AI 에이전트', 'none', '지금은 사람이 점검 목록에 담음'], ['점검 결과 환류', '머신러닝 운영', 'part', '결과 입력·오경보율만'],
+  ['원인 추정', '규칙 + GPT 보강', 'part', (S.orders_summary?.llm || 'off') === 'off' ? '기준표 규칙으로 동작 · GPT 꺼짐' : `GPT ${S.orders_summary.llm} · ${S.orders_summary.llm_reviewed}건 보강`],
+  ['손실·우선순위 산정', '규칙', 'part', '정격 기준 추정 · 안전 → 손실 → 반복 순'],
+  ['작업지시 생성', '규칙 (에이전트 문구는 이후)', 'part', '접속반 × 작업 종류로 묶고 방문 순서 산정'], ['점검 결과 환류', '머신러닝 운영', 'part', '결과 입력·오경보율·원인 일치율'],
 ];
 const KNOWLEDGE = [
   ['셀 고온 + 같은 위치에 새똥·오염', '오염에 의한 부분 음영', '청소 후 재촬영'], ['셀 고온 + 가시광 정상', '셀 균열, 셀 불량, 납땜 불량', '현장 점검, 필요 시 I-V 측정'],
@@ -105,8 +104,99 @@ const chip = (text, tone = '', dot = false) => `<span class="chip ${tone}">${dot
 const finalChip = final => chip(FINAL[final][0], FINAL[final][1], true);
 const note = text => `<p class="note">${icon('info')}<span>${text}</span></p>`;
 const empty = (name, title, text) => `<div class="empty">${icon(name)}<b>${title}</b><span>${text}</span></div>`;
-const orderCount = () => Object.keys(state.orders).length;
-const saveOrders = () => store.set('orders', JSON.stringify(state.orders));
+// ---------- Work orders: live from serve_console.py (history DB) or, opened as a file, kept in this browser ----------
+const DIAG = new Map((S.diagnoses || []).map(d => [d.id, d]));
+const KB = S.kb || { causes: [], kinds: {}, rules: [], version: '' };
+const WO_STATUS = ['초안', '발행', '점검 완료', '조치 완료', '종결'];
+const STATUS_TONE = { 초안: '', 발행: 'warn', '점검 완료': 'info', '조치 완료': 'ok', 종결: 'ok' };
+const FIELD = new Set(['operation', 'electrical', 'field_check', 'clean', 'weed', 'manual']);
+const URGENCY_TONE = { 최우선: 'crit', 우선: 'warn', 보통: 'info', 낮음: '' };
+const CONF_TONE = { 높음: 'ok', 중간: 'info', 낮음: 'warn' };
+const live = { on: false, snapshot: null };
+const local = Object.assign({ status: {}, results: {}, manual: {}, removed: {} }, JSON.parse(store.get('workorders') || '{}'));
+const saveLocal = () => store.set('workorders', JSON.stringify(local));
+const resultKey = (order, module) => `${order}|${module}`;
+let orderIndex = null;
+
+function workOrders() {
+  if (live.on && live.snapshot) return [...live.snapshot.orders, ...live.snapshot.carried_over.map(o => ({ ...o, carried: true }))];
+  const base = (S.work_orders || []).map(o => ({ ...o, status: local.status[o.order_id] || '초안', modules: o.modules.filter(m => !local.removed[resultKey(o.order_id, m)]) }));
+  const manual = {};
+  Object.entries(local.manual).forEach(([module, info]) => {
+    const id = `${S.flight_id}-${info.jb}-manual`;
+    (manual[id] ||= { order_id: id, inverter_id: info.inverter, jb_id: info.jb, action_kind: 'manual', priority: 999, route_order: 999, loss_w: 0, safety: 0,
+      title: '', instructions: `${info.inverter} › ${info.jb} · 운영자가 직접 추가한 모듈`, equipment: ['열화상 카메라'], modules: [], status: local.status[id] || '초안' }).modules.push(module);
+  });
+  Object.values(manual).forEach(o => { o.title = `[보통] ${o.inverter_id} › ${o.jb_id} 운영자 추가 확인 ${o.modules.length}장`; });
+  return [...base.filter(o => o.modules.length), ...Object.values(manual)];
+}
+const results = () => live.on && live.snapshot ? Object.fromEntries(live.snapshot.results.map(r => [resultKey(r.order_id, r.module_id), r])) : local.results;
+const orderMap = () => orderIndex ||= new Map(workOrders().flatMap(o => o.modules.map(m => [m, o])));
+const orderOf = module => orderMap().get(module);
+const fieldOrder = module => { const o = orderOf(module); return o && FIELD.has(o.action_kind) ? o : null; };
+const openOrders = () => workOrders().filter(o => FIELD.has(o.action_kind) && o.status !== '종결').length;
+
+async function connect() {
+  if (!location.protocol.startsWith('http')) return;
+  try {
+    const health = await (await fetch('/api/health')).json();
+    if (!health.ok) return;
+    live.snapshot = await (await fetch('/api/snapshot')).json();
+    live.on = true;
+  } catch { /* opened without serve_console.py */ }
+}
+async function act(path, body, localChange) {
+  try {
+    if (live.on) {
+      const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || response.statusText);
+      live.snapshot = data;
+    } else { localChange(); saveLocal(); }
+  } catch (error) { toast(`저장하지 못했습니다: ${error.message}`); }
+  orderIndex = null;
+  render();
+}
+function setStatus(order, status) {
+  const actor = status === '발행' ? prompt('발행(승인)하는 사람 이름', store.get('actor') || '') : (store.get('actor') || '');
+  if (actor === null) return render();
+  if (status === '발행') store.set('actor', actor);
+  return act(`/api/orders/${encodeURIComponent(order)}/status`, { status, actor }, () => { local.status[order] = status; });
+}
+function saveResult(order, module, field, value) {
+  const fields = { [field]: value };
+  if (field === 'cause' && value && !results()[resultKey(order, module)]?.inspected_on) fields.inspected_on = new Date().toISOString().slice(0, 10);
+  return act('/api/results', { order_id: order, module_id: module, ...fields }, () => {
+    const key = resultKey(order, module);
+    local.results[key] = { ...(local.results[key] || {}), order_id: order, module_id: module, ...fields };
+    const o = workOrders().find(x => x.order_id === order);
+    if (o && o.status === '발행' && o.modules.every(m => local.results[resultKey(order, m)]?.cause)) {
+      local.status[order] = o.modules.every(m => local.results[resultKey(order, m)].cause === '이상 없음') ? '종결' : '점검 완료';
+    }
+  });
+}
+function addManual(module) {
+  const c = candidateById.get(module) || address(indexById.get(module));
+  return act('/api/manual', { module_id: module, actor: store.get('actor') || '' }, () => { local.manual[module] = { jb: c.jb, inverter: c.inverter }; });
+}
+function removeModule(order, module) {
+  return act(`/api/orders/${encodeURIComponent(order)}/remove`, { module_id: module }, () => {
+    if (order.endsWith('-manual')) delete local.manual[module]; else local.removed[resultKey(order, module)] = true;
+  });
+}
+const diagChip = id => { const d = DIAG.get(id); return !d ? chip('결과 없음') : d.source.startsWith('rule+llm') ? chip('GPT 보강', 'info') : chip('규칙 판단'); };
+function diagnosisView(id) {
+  const d = DIAG.get(id);
+  if (!d) return note('이 모듈의 원인 추정 결과가 없습니다. python run_flight.py 로 원인 추정을 만든 뒤 다시 여세요.');
+  const head = `<div class="row wrap">${chip(d.urgency, URGENCY_TONE[d.urgency] || '', true)}${d.ai_downgraded ? chip('AI 하향', 'info') : ''}${d.ai_audit ? chip('AI 하향 검증 표본', 'warn') : ''}${d.exclude ? chip('이상에서 제외 후보') : ''}${d.needs_review ? chip('사람 검토 필요', 'warn') : ''}${d.safety ? chip('안전 위험', 'crit') : ''}${d.loss_w ? chip(`예상 손실 ${num(d.loss_w, 0)} W`) : ''}</div>
+    <p style="margin:8px 0"><b>${esc(d.primary)}</b> → ${esc(d.action)}</p>`;
+  const look = (d.appearance ? `<p class="sub">가시광 외관: <b>${esc(d.appearance.label)}</b> (${esc(d.appearance.confidence)}) ${esc(d.appearance.note || '')}</p>` : '')
+    + (d.ai_downgraded ? note(`AI 하향: ${esc(d.ai_downgraded)}. 다음 촬영에서 다시 걸리면 현장 작업지시로 올라갑니다.`) : '')
+    + (d.ai_audit ? note(`검증 표본: ${esc(d.ai_audit)}. 현장 결과로 AI 하향이 맞았는지 잽니다.`) : '')
+    + (d.field_kind_kept ? note(`${esc(d.field_kind_kept)}. 전기 점검은 영상만으로 빼지 않습니다.`) : '');
+  const list = d.candidates.map((c, i) => `<div class="reason">${icon(i ? 'layers' : 'bot')}<span><b>${i + 1}. ${esc(c.cause)}</b> ${chip(c.confidence, CONF_TONE[c.confidence] || '')}<br>${esc(c.action)}${c.llm_reason ? `<br><span class="sub">GPT: ${esc(c.llm_reason)}</span>` : ''}${(c.evidence || []).map(e => `<br><span class="sub">· ${esc(e.text)}</span>`).join('')}</span></div>`).join('');
+  return head + look + list + note('원인은 후보와 근거입니다. 점검 대상인지는 판정 규칙이 정하고, 이 결과는 현장 점검을 시작하기 위한 설명입니다.');
+}
 const saveReviews = () => store.set('reviews', JSON.stringify(state.reviews));
 const SHADOW_REVIEW = { yes: ['그림자 확인됨', 'ok'], no: ['그림자 아님', 'crit'] };
 
@@ -123,7 +213,7 @@ function shell(page, body) {
 <header class="top">
   <a class="brand" href="#/overview">${icon('radar')}<span>AeroSolar <b>OPS</b></span></a>
   <span class="site">${esc(S.site.name)}<small>${int(S.site.modules)} 모듈 · 촬영 ${esc((F.first || '').slice(0, 10))}</small></span>
-  <nav class="tabs">${NAV.map(([id, label, ic]) => `<a href="#/${id}" class="${id === page ? 'on' : ''}">${icon(ic)}<span>${label}</span>${id === 'orders' && orderCount() ? `<em>${orderCount()}</em>` : ''}</a>`).join('')}</nav>
+  <nav class="tabs">${NAV.map(([id, label, ic]) => `<a href="#/${id}" class="${id === page ? 'on' : ''}">${icon(ic)}<span>${label}</span>${id === 'orders' && openOrders() ? `<em>${openOrders()}</em>` : ''}</a>`).join('')}</nav>
   <div class="tools">
     <div class="cond"><span>${icon('sun')}${F.irradiance_w_m2 == null ? '일사 미기록' : int(F.irradiance_w_m2) + ' W/m²'}</span><i></i>
       <span>${icon('wind')}${F.wind_m_s == null ? '풍속 미기록' : num(F.wind_m_s) + ' m/s'}</span><i></i>${condition}</div>
@@ -141,8 +231,8 @@ function stageStrip() {
     ['촬영·수집', `${int(F.thermal_images)}쌍`, F.irradiance_w_m2 == null ? '일사 미기록' : `${int(F.irradiance_w_m2)} W/m²`, 'part', '#/pipeline'],
     ['자동 분석', `${num(pct(F.analysed, F.thermal_images), 0)}%`, `${int(F.analysed)} / ${int(F.thermal_images)}장${running ? ' · 실행 중' : ''}`, running ? 'run' : 'done', '#/pipeline'],
     ['이상 탐지', `점검 ${inspectCount}건`, `재확인 ${recheckCount} · 그림자 의심 ${S.candidates.filter(c => c.shadow).length}`, 'done', '#/overview'],
-    ['AI 원인 추정', '연결 전', '증거 묶음만 표시', 'none', '#/pipeline'],
-    ['점검·환류', `${orderCount()}건`, '점검 목록에 담긴 모듈', orderCount() ? 'part' : 'none', '#/orders'],
+    ['AI 원인 추정', DIAG.size ? `${int(DIAG.size)}건` : '결과 없음', (S.orders_summary?.llm || 'off') === 'off' ? '규칙 판단 · GPT 꺼짐' : `GPT 보강 ${int(S.orders_summary.llm_reviewed)}건`, DIAG.size ? 'part' : 'none', '#/orders'],
+    ['점검·환류', `${openOrders()}건`, '진행 중인 현장 작업지시', openOrders() ? 'part' : 'none', '#/orders'],
   ];
   return `<nav class="strip" aria-label="점검 단계">${steps.map(([title, value, sub, tone, href], i) => `<a class="step ${tone}" href="${href}">
     <span class="n">${i + 1}</span><span class="body"><span class="label">${title}</span><b>${value}</b><small>${sub}</small></span></a>`).join('')}</nav>`;
@@ -151,7 +241,7 @@ function stageStrip() {
 // ---------- Overview: queue + 3D map + detail ----------
 function matches(candidate) {
   const text = state.query.trim().toLowerCase();
-  return (state.filter === 'all' || (candidate.verdict || 'inspect') === state.filter || (state.filter === 'picked' && state.orders[candidate.id])
+  return (state.filter === 'all' || (candidate.verdict || 'inspect') === state.filter || (state.filter === 'picked' && fieldOrder(candidate.id))
       || (state.filter === 'shadow' && candidate.shadow))
     && (!text || [candidate.id, candidate.string, candidate.jb, candidate.inverter].some(v => v.toLowerCase().includes(text)));
 }
@@ -161,7 +251,7 @@ function listItems() {
   if (!items.length) return empty('search', '조건에 맞는 후보가 없습니다', '검색어나 구분을 바꿔 보세요.');
   return items.map(c => `<button class="item ${VERDICT[c.verdict || 'inspect'][1]} ${c.id === state.module ? 'sel' : ''}" data-act="module" data-id="${esc(c.id)}">
     <span class="between"><b class="mono">${esc(c.id)}</b><span class="delta">${signed(c.max_neighbor_delta)}℃</span></span>
-    <span class="between sub"><span>${esc(c.jb)} · ${esc(c.string)}</span><span>${state.orders[c.id] ? `<span class="t-pri">담김 · </span>` : ''}후보 ${c.flagged_count}/${c.observation_count}회</span></span>
+    <span class="between sub"><span>${esc(c.jb)} · ${esc(c.string)}</span><span>${fieldOrder(c.id) ? `<span class="t-pri">작업지시 · </span>` : ''}후보 ${c.flagged_count}/${c.observation_count}회</span></span>
     <span class="row wrap tags">${typeChip(c.type)}${c.shadow ? (state.reviews[c.id] ? chip(SHADOW_REVIEW[state.reviews[c.id]][0], SHADOW_REVIEW[state.reviews[c.id]][1]) : chip('그림자 의심', 'warn')) : ''}${c.edge_only ? chip('가장자리만', 'warn') : ''}</span></button>`).join('');
 }
 
@@ -253,8 +343,7 @@ const viewerLink = candidate => `viewer/Shinan3_Viewer.html?module=${encodeURICo
 function candidatePanel(candidate) {
   const o = candidate.observations[Math.min(state.obs, candidate.observations.length - 1)];
   const visible = S.candidates.filter(matches), position = visible.findIndex(c => c.id === candidate.id);
-  const picked = state.orders[candidate.id];
-  const stringMates = S.candidates.filter(c => c.string === candidate.string);
+  const order = orderOf(candidate.id), inField = order && FIELD.has(order.action_kind);
   return `<div class="pane-head">
     <div><div class="row wrap"><h2 class="mono">${esc(candidate.id)}</h2>${verdictChip(candidate.verdict)}${typeChip(candidate.type)}${o.reasons.map(r => chip(REASON[r], r === 'hotspot' ? 'crit' : 'warn')).join('')}</div>
       <p class="sub">${esc(candidate.inverter)} › ${esc(candidate.jb)} › ${esc(candidate.string)}</p>
@@ -265,8 +354,8 @@ function candidatePanel(candidate) {
   <div class="pane-body">
     ${shadowCallout(candidate, o)}
     <div class="row">
-      <button class="btn ${picked ? 'on' : 'primary'}" style="flex:1" data-act="pick" data-id="${esc(candidate.id)}">${icon(picked ? 'check' : 'plus')}${picked ? '점검 목록에 담김' : '점검 목록에 담기'}</button>
-      ${stringMates.length > 1 ? `<button class="btn" data-act="pick-string" data-id="${esc(candidate.string)}" title="같은 스트링의 후보 ${stringMates.length}건을 함께 담습니다">스트링 후보 ${stringMates.length}건 담기</button>` : ''}</div>
+      ${order ? `<a class="btn ${inField ? 'on' : ''}" style="flex:1" href="#/orders?o=${encodeURIComponent(order.order_id)}">${icon(inField ? 'check' : 'clock')}${esc(KB.kinds[order.action_kind] || order.action_kind)} · ${esc(order.status)}</a>` : ''}
+      ${inField ? '' : `<button class="btn primary" style="flex:1" data-act="manual" data-id="${esc(candidate.id)}" title="이 모듈을 해당 접속반의 운영자 추가 확인 작업지시에 넣습니다">${icon('plus')}현장 작업지시에 추가</button>`}</div>
     <a class="btn" href="${esc(viewerLink(candidate))}" target="_blank" rel="noopener" title="상세 3D 발전소에서 이 모듈로 이동하고 촬영 시각의 해로 그림자를 봅니다">${icon('cube')}3D 현장 보기 (촬영 시각 그림자)</a>
     <section><div class="between"><h3>영상</h3><div class="row">${zoomSeg()}<button class="btn icon" data-act="lightbox" title="크게 보기" aria-label="영상 크게 보기">${icon('expand')}</button></div></div>
       <div class="views">${thermalView(o, state.zoom)}${rgbView(o, state.zoom)}</div>
@@ -284,10 +373,10 @@ function candidatePanel(candidate) {
       <div class="history">${candidate.observations.map((item, index) => `<button class="obs ${index === state.obs ? 'sel' : ''} ${FINAL[item.final][1]}" data-act="obs" data-id="${index}">
         <b class="mono">${esc(frameNo(item.image_id))}${item.edge ? ' <span class="t-warn">· 가장자리</span>' : ''}</b><span class="sub">${FINAL[item.final][0]} · ${signed(item.neighbor_delta_mean)}℃${item.type ? ' · ' + (TYPE[item.type] || '') : ''}</span></button>`).join('')}</div>
       ${note('태양 반사는 프레임마다 위치가 바뀝니다. 여러 프레임에서 반복해서 걸릴수록 실제 발열일 가능성이 높습니다.')}</section>
-    <section><div class="between"><h3>${icon('bot')}AI 원인 추정</h3>${chip('연결 전')}</div>
-      <p class="sub">원인 추정 에이전트가 연결되면 원인 후보·근거·권장 조치가 여기에 나옵니다. 지금은 에이전트에 넘길 증거 묶음만 보여 줍니다.</p>
-      ${evidence(candidate, o)}
-      <details class="kb"><summary>원인 판단 기준표 (기획서 4.4절)</summary><ul>${KNOWLEDGE.map(([seen, why, act]) => `<li><b>${seen}</b><br>${why} → ${act}</li>`).join('')}</ul></details></section>
+    <section><div class="between"><h3>${icon('bot')}AI 원인 추정</h3>${diagChip(candidate.id)}</div>
+      ${diagnosisView(candidate.id)}
+      <details class="kb"><summary>규칙 엔진이 본 증거</summary>${evidence(candidate, o)}</details>
+      <details class="kb"><summary>원인 판단 기준표 (기획서 4.4절${KB.version ? ' · ' + esc(KB.version) : ''})</summary><ul>${(KB.rules.length ? KB.rules.map(r => [r.observation, r.cause, r.action]) : KNOWLEDGE).map(([seen, why, act]) => `<li><b>${esc(seen)}</b><br>${esc(why)} → ${esc(act)}</li>`).join('')}</ul></details></section>
   </div>`;
 }
 
@@ -319,12 +408,12 @@ function overview(params) {
   if (params.has('m')) { state.module = params.get('m'); state.obs = 0; state.zoom = 1; }
   if (params.size) history.replaceState(null, '', '#/overview');
   const candidate = candidateById.get(state.module), index = indexById.get(state.module);
-  const picked = S.candidates.filter(c => state.orders[c.id]).length;
+  const picked = S.candidates.filter(c => fieldOrder(c.id)).length;
   return `${stageStrip()}
 <div class="work ${state.module ? 'open' : ''}">
   <aside class="pane queue">
     <div class="pane-head"><h2>이상 후보</h2><span class="sub">${S.candidates.filter(matches).length} / ${S.candidates.length}건</span></div>
-    <div class="queue-tools"><div class="seg">${[['all', '전체'], ['inspect', `점검 ${inspectCount}`], ['recheck', `재확인 ${recheckCount}`], ['shadow', `그림자 ${S.candidates.filter(c => c.shadow).length}`], ['picked', `담김 ${picked}`]]
+    <div class="queue-tools"><div class="seg">${[['all', '전체'], ['inspect', `점검 ${inspectCount}`], ['recheck', `재확인 ${recheckCount}`], ['shadow', `그림자 ${S.candidates.filter(c => c.shadow).length}`], ['picked', `작업지시 ${picked}`]]
       .map(([key, label]) => `<button class="${state.filter === key ? 'on' : ''}" data-act="filter" data-id="${key}">${label}</button>`).join('')}</div>
       <label class="search">${icon('search')}<input id="q" type="search" placeholder="모듈·스트링·접속반·인버터 ( / )" value="${esc(state.query)}" aria-label="후보 검색"></label></div>
     <div class="list" id="list">${listItems()}</div>
@@ -387,62 +476,90 @@ function pipeline() {
 </div>`;
 }
 
-// ---------- Orders: inspection list, field results, feedback metrics ----------
-const orderRows = () => S.candidates.filter(c => state.orders[c.id]).map(c => ({ c, o: state.orders[c.id] }));
-
-function orders() {
-  const rows = orderRows();
-  const groups = {};
-  rows.forEach(row => ((groups[`${row.c.inverter} › ${row.c.jb}`] ||= {})[row.c.string] ||= []).push(row));
-  const byStatus = ORDER_STATUS.map(status => rows.filter(r => r.o.status === status).length);
-  const judged = rows.filter(r => r.o.status !== ORDER_STATUS[0] && r.o.cause), falseAlarms = judged.filter(r => r.o.cause === '이상 없음').length;
-  const options = (list, value, blank) => `<option value="">${blank}</option>` + list.map(v => `<option ${v === value ? 'selected' : ''}>${v}</option>`).join('');
+// ---------- Work orders: issue, field results, feedback metrics ----------
+function orders(params) {
+  if (params?.has('o')) { state.focusOrder = params.get('o'); history.replaceState(null, '', '#/orders'); }
+  const list = workOrders(), res = results(), focus = state.focusOrder;
+  const field = list.filter(o => FIELD.has(o.action_kind)), drone = list.filter(o => !FIELD.has(o.action_kind));
+  const byStatus = WO_STATUS.map(status => field.filter(o => o.status === status).length);
+  const done = Object.values(res).filter(r => r.cause), falseAlarms = done.filter(r => r.cause === '이상 없음').length;
+  const causes = done.filter(r => r.cause !== '이상 없음' && r.cause !== '원인 판별 어려움'), matched = causes.filter(r => DIAG.get(r.module_id)?.primary === r.cause).length;
+  const located = done.filter(r => r.location_ok !== null && r.location_ok !== undefined && r.location_ok !== ''), locatedOk = located.filter(r => Number(r.location_ok) === 1).length;
+  const safety = S.orders_summary?.safety_notify || [];
+  const NO_FIELD = new Set(['이상 없음', '식생 음영', '구조물·수목 음영', '오염에 의한 부분 음영', '반사 또는 음영', '태양 반사']);
+  const audits = done.filter(r => DIAG.get(r.module_id)?.ai_audit), auditsRight = audits.filter(r => NO_FIELD.has(r.cause)).length;
+  const sm = S.orders_summary || {};
+  const options = (items, value, blank) => `<option value="">${blank}</option>` + items.map(v => `<option ${v === value ? 'selected' : ''}>${esc(v)}</option>`).join('');
   const metric = (label, value, hint, tone = 't-mute') => `<div class="stat"><span class="label">${label}</span><b class="${tone}">${value}</b><span class="sub">${hint}</span></div>`;
+  const attrs = (o, m, editable) => `data-o="${esc(o.order_id)}" data-m="${esc(m)}" ${editable ? '' : 'disabled'}`;
+  const card = o => {
+    const editable = o.status !== '초안' && o.status !== '종결';
+    const rows = o.modules.map(m => {
+      const r = res[resultKey(o.order_id, m)] || {}, d = DIAG.get(m), loc = r.location_ok === null || r.location_ok === undefined || r.location_ok === '' ? '' : String(Number(r.location_ok));
+      return `<tr><td><a class="mono" href="#/overview?m=${esc(m)}">${esc(m)}</a>${d ? `<br><span class="sub">${esc(d.primary)}</span>` : ''}${d?.ai_audit ? `<br>${chip('검증 표본', 'warn')}` : ''}</td>
+        <td><select data-res="cause" ${attrs(o, m, editable)} aria-label="현장 확인 원인">${options([...KB.causes, '이상 없음'], r.cause, '미입력')}</select></td>
+        <td><select data-res="action" ${attrs(o, m, editable)} aria-label="조치">${options(ACTIONS, r.action, '미입력')}</select></td>
+        <td><select data-res="location_ok" ${attrs(o, m, editable)} aria-label="표시된 위치가 맞았는지"><option value="">위치 확인</option><option value="1" ${loc === '1' ? 'selected' : ''}>위치 맞음</option><option value="0" ${loc === '0' ? 'selected' : ''}>위치 다름</option></select></td>
+        <td><input data-res="inspector" ${attrs(o, m, editable)} value="${esc(r.inspector || '')}" placeholder="확인자" aria-label="확인자"></td>
+        <td><input data-res="memo" ${attrs(o, m, editable)} value="${esc(r.memo || '')}" placeholder="메모" aria-label="메모"></td>
+        <td class="noprint">${o.status === '초안' ? `<button class="btn icon" data-act="remove" data-o="${esc(o.order_id)}" data-m="${esc(m)}" title="작업지시에서 빼기" aria-label="작업지시에서 빼기">${icon('close')}</button>` : ''}</td></tr>`;
+    }).join('');
+    return `<details class="group wo" id="wo-${esc(o.order_id)}" ${focus === o.order_id || o.status === '발행' ? 'open' : ''}>
+      <summary><b>${int(o.route_order)}. ${esc(o.title)}</b> ${chip(o.status, STATUS_TONE[o.status] || '', true)}${o.carried ? chip('이전 회차 이월', 'warn') : ''}${o.safety ? chip('안전', 'crit') : ''}${o.loss_w ? ` <span class="sub">예상 손실 ${num(o.loss_w, 0)} W</span>` : ''}</summary>
+      <div class="row wrap noprint" style="margin:8px 0">${o.status === '초안' ? `<button class="btn primary" data-act="issue" data-id="${esc(o.order_id)}">${icon('check')}발행 (승인)</button>`
+        : `<select data-status="${esc(o.order_id)}" aria-label="작업지시 상태">${WO_STATUS.slice(1).map(v => `<option ${v === o.status ? 'selected' : ''}>${v}</option>`).join('')}</select>`}
+        <span class="sub">준비물: ${esc((o.equipment || []).join(', ') || '없음')}</span></div>
+      <pre class="instructions">${esc(o.instructions)}</pre>
+      <div class="table-box"><table class="orders"><thead><tr><th>모듈 · 추정 원인</th><th>현장 확인 원인</th><th>조치</th><th>위치</th><th>확인자</th><th>메모</th><th class="noprint"></th></tr></thead><tbody>${rows}</tbody></table></div></details>`;
+  };
+  const droneCard = o => `<details class="group"><summary><b>${esc(KB.kinds[o.action_kind] || o.action_kind)}</b> · ${int(o.modules.length)}장 ${chip(o.status, STATUS_TONE[o.status] || '')}</summary>
+    <p class="sub">${{ recheck: '촬영 한 번에서만 이상으로 걸렸거나 AI 외관 확인으로 내린 모듈입니다. 다음 정기 촬영에서 다시 걸리면 현장 작업지시로 올립니다.',
+      retake: '드론이 줄을 바꾸며 회전하는 동안에만 찍혀 판정하지 않은 모듈입니다. 다음 촬영에서 직선 비행으로 다시 찍습니다.' }[o.action_kind] || '그림자나 반사로 보이는 모듈입니다. 다른 시간대에 다시 촬영합니다.'}</p>
+    <div class="chips">${o.modules.slice(0, 300).map(m => `<a class="mono sub" href="#/overview?m=${esc(m)}">${esc(m)}</a>`).join(' ')}${o.modules.length > 300 ? ` <span class="sub">외 ${int(o.modules.length - 300)}장 (CSV에 전부)</span>` : ''}</div></details>`;
   return `${stageStrip()}
 <div class="grid cols wide">
   <div class="card">
-    <div class="head wrap"><div><h2>${icon('task')}점검 목록</h2><p class="sub">인버터 › 접속반 › 스트링 순으로 묶었습니다. 현장에서 확인한 결과를 바로 적을 수 있습니다.</p></div>
-      <div class="row wrap noprint"><button class="btn" data-act="pick-final" data-id="inspect">${icon('plus')}점검 대상 ${inspectCount}건 담기</button>
-        <button class="btn" data-act="pick-final" data-id="all">${icon('plus')}재확인 포함 전부 담기</button>
-        <button class="btn" data-act="csv" ${rows.length ? '' : 'disabled'}>${icon('download')}엑셀용 CSV</button>
-        <button class="btn" data-act="print" ${rows.length ? '' : 'disabled'}>${icon('print')}인쇄</button>
-        <button class="btn danger" data-act="clear" ${rows.length ? '' : 'disabled'}>${icon('trash')}비우기</button></div></div>
-    ${rows.length ? `<div class="row wrap" style="margin-bottom:12px">${ORDER_STATUS.map((status, i) => chip(`${status} ${byStatus[i]}`, ['warn', 'info', 'ok', ''][i])).join('')}</div>` : ''}
-    ${rows.length ? Object.entries(groups).map(([group, strings]) => `<div class="group"><h3>${icon('pin')}${esc(group)}</h3>
-      ${Object.entries(strings).map(([string, items]) => `<div class="table-box"><table class="orders"><thead><tr><th>${esc(string)} · ${items.length}장</th><th>판정</th><th class="num">주변 대비</th><th>상태</th><th>현장 확인 원인</th><th>조치</th><th>확인자 · 메모</th><th class="noprint"></th></tr></thead>
-        <tbody>${items.map(({ c, o }) => `<tr><td><a class="mono" href="#/overview?m=${esc(c.id)}">${esc(c.id)}</a></td><td>${finalChip(c.final)}</td><td class="num mono">${signed(c.max_neighbor_delta)}℃</td>
-          <td><select data-field="status" data-id="${esc(c.id)}" aria-label="상태">${ORDER_STATUS.map(v => `<option ${v === o.status ? 'selected' : ''}>${v}</option>`).join('')}</select></td>
-          <td><select data-field="cause" data-id="${esc(c.id)}" aria-label="현장 확인 원인">${options(CAUSES, o.cause, '미입력')}</select></td>
-          <td><select data-field="action" data-id="${esc(c.id)}" aria-label="조치">${options(ACTIONS, o.action, '미입력')}</select></td>
-          <td><input data-field="memo" data-id="${esc(c.id)}" value="${esc(o.memo)}" placeholder="확인자, 특이사항" aria-label="확인자와 메모"></td>
-          <td class="noprint"><button class="btn icon" data-act="pick" data-id="${esc(c.id)}" title="목록에서 빼기" aria-label="목록에서 빼기">${icon('close')}</button></td></tr>`).join('')}</tbody></table></div>`).join('')}</div>`).join('')
-      : empty('inbox', '점검 목록이 비어 있습니다', '현황 화면에서 이상 후보를 살펴보고 “점검 목록에 담기”를 누르거나, 위 버튼으로 한 번에 담으세요.')}
+    <div class="head wrap"><div><h2>${icon('task')}현장 작업지시</h2><p class="sub">방문 순서대로 ${field.length}건, 모듈 ${int(field.reduce((n, o) => n + o.modules.length, 0))}장. 초안은 운영자가 발행해야 현장에 나갑니다.${sm.llm_reviewed ? ` 규칙만으로는 ${int(sm.field_modules_rules_only)}장이었고, GPT가 ${int(sm.llm_reviewed)}장의 외관을 확인해 ${int(sm.ai_downgraded || 0)}장의 작업을 바꿨습니다 (검증 표본 ${int(sm.ai_audit_samples || 0)}장은 그대로 현장 유지).` : ''}</p></div>
+      <div class="row wrap noprint"><button class="btn" data-act="csv" ${list.length ? '' : 'disabled'}>${icon('download')}엑셀용 CSV</button>
+        <button class="btn" data-act="print" ${field.length ? '' : 'disabled'}>${icon('print')}인쇄</button></div></div>
+    ${live.on ? '' : `<div class="callout warn noprint"><b>입력 내용이 이 브라우저에만 저장됩니다.</b><p class="sub">프로젝트 폴더에서 <code>python serve_console.py</code>를 실행하고 안내된 주소로 열면 이력 DB(results/history.db)에 저장되고 다음 회차로 이어집니다.</p></div>`}
+    ${safety.length ? `<div class="callout crit"><b>즉시 통보: 안전 위험 모듈 ${safety.length}장</b><p class="sub">${safety.map(esc).join(', ')}</p></div>` : ''}
+    <div class="row wrap" style="margin:12px 0">${WO_STATUS.map((status, i) => chip(`${status} ${byStatus[i]}`, STATUS_TONE[status] || '')).join('')}</div>
+    ${field.length ? field.map(card).join('') : empty('inbox', '현장 작업지시가 없습니다', '원인 추정과 작업지시를 만들려면 python run_flight.py 를 실행하세요.')}
   </div>
   <div class="stack noprint">
+    <div class="card"><div class="head"><h2>${icon('camera')}다음 촬영으로 넘기는 모듈</h2></div>${drone.length ? drone.map(droneCard).join('') : '<p class="sub">없습니다.</p>'}</div>
     <div class="card"><div class="head"><h2>${icon('flow')}환류 지표</h2><span class="sub">기획서 8절</span></div>
       <div class="stats two">
-        ${metric('오경보율', judged.length ? num(pct(falseAlarms, judged.length), 0) + '%' : '측정 전', judged.length ? `결과 입력 ${judged.length}건 중 이상 없음 ${falseAlarms}건` : '현장 결과를 입력하면 계산됩니다', judged.length ? 't-pri' : 't-mute')}
+        ${metric('오경보율', done.length ? num(pct(falseAlarms, done.length), 0) + '%' : '측정 전', done.length ? `결과 ${done.length}건 중 이상 없음 ${falseAlarms}건` : '현장 결과를 입력하면 계산됩니다', done.length ? 't-pri' : 't-mute')}
+        ${metric('원인 일치율', causes.length ? num(pct(matched, causes.length), 0) + '%' : '측정 전', causes.length ? `원인이 확인된 ${causes.length}건 중 1순위 일치 ${matched}건` : '현장에서 원인을 확인하면 계산됩니다', causes.length ? 't-pri' : 't-mute')}
+        ${metric('주소 정확도', located.length ? num(pct(locatedOk, located.length), 0) + '%' : '측정 전', located.length ? `위치 확인 ${located.length}건 중 맞음 ${locatedOk}건` : '현장에서 위치가 맞았는지 적으면 계산됩니다', located.length ? 't-pri' : 't-mute')}
+        ${metric('AI 하향 정확도', audits.length ? num(pct(auditsRight, audits.length), 0) + '%' : '측정 전', audits.length ? `검증 표본 ${audits.length}건 중 현장 점검 불필요 ${auditsRight}건` : `검증 표본 ${int(sm.ai_audit_samples || 0)}장의 현장 결과로 계산됩니다`, audits.length ? 't-pri' : 't-mute')}
         ${metric('미검출률', '측정 전', '정상 판정 모듈의 표본 검수가 필요합니다')}
-        ${metric('원인 일치율', '측정 전', '원인 추정 에이전트 연결 후 계산됩니다')}
-        ${metric('주소 연결률', num(pct(R.linked, R.observations)) + '%', `후보 기준 · ${R.frames}장`, 't-pri')}
       </div>
       ${note('지표는 현장 확인 결과로만 계산하고, 프로그램 판정을 정답으로 쓰지 않습니다.')}</div>
     <div class="card"><div class="head"><h2>${icon('info')}알아둘 점</h2></div>
-      <ul class="sub plain"><li>목록과 입력 내용은 <b>이 PC의 이 브라우저에만</b> 저장됩니다. CSV로 내보내 보관하세요.</li>
-        <li>추정 원인·예상 손실·방문 순서는 원인 추정과 점검 생성 에이전트가 연결된 뒤 채워집니다.</li>
-        <li>주소 연결이 후보 단계라, 현장에서는 표시된 모듈의 양옆 모듈도 함께 확인하세요.</li></ul></div>
+      <ul class="sub plain"><li>작업지시는 접속반 × 작업 종류로 묶었고, 안전 → 손실 → 반복 관측 순으로 우선순위를, 가까운 접속반 순으로 방문 순서를 정했습니다.</li>
+        <li>예상 손실은 정격 250W 기준의 추정치입니다. 실제 손실은 정비 전후 발전량으로 바꿀 예정입니다.</li>
+        <li>주소 연결이 후보 단계라, 현장에서는 표시된 모듈의 양옆도 함께 확인하고 위치가 맞았는지 적어 주세요.</li></ul></div>
   </div>
 </div>`;
 }
 
 function exportCsv() {
   const quote = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
-  const lines = [['인버터', '접속반', '스트링', '모듈', '모듈 판정', '판정 사유', '관측 판정', '주변 대비(℃)', '최고 온도(℃)', '후보 횟수', '관측 횟수', '판정 근거', '형상', '그림자 의심', '상태', '현장 확인 원인', '조치', '확인자·메모', '3D 위치']];
-  orderRows().forEach(({ c, o }) => lines.push([c.inverter, c.jb, c.string, c.id, VERDICT[c.verdict || 'inspect'][0], c.verdict_reason || '', FINAL[c.final][0], num(c.max_neighbor_delta), num(c.observations[0].max_temp), c.flagged_count, c.observation_count,
-    c.observations[0].reasons.map(r => REASON[r]).join(' / ') || '분류 모델', TYPE[c.type] || '', c.shadow ? (SHADOW_REVIEW[state.reviews[c.id]] || ['확인 필요'])[0] : '', o.status, o.cause, o.action, o.memo, new URL(viewerLink(c), location.href).href]));
+  const res = results();
+  const lines = [['방문 순서', '작업지시', '작업 종류', '상태', '인버터', '접속반', '스트링', '모듈', '모듈 판정', '추정 원인', '권장 조치', '긴급도', '예상 손실(W)', '현장 확인 원인', '조치', '위치', '확인자', '확인일', '메모', '3D 위치']];
+  workOrders().forEach(o => o.modules.forEach(m => {
+    const c = candidateById.get(m), d = DIAG.get(m), r = res[resultKey(o.order_id, m)] || {}, a = indexById.has(m) ? address(indexById.get(m)) : {};
+    lines.push([o.route_order, o.order_id, KB.kinds[o.action_kind] || o.action_kind, o.status, a.inverter || o.inverter_id, a.jb || o.jb_id, a.string || '', m,
+      c ? VERDICT[c.verdict || 'inspect'][0] : '', d?.primary || '', d?.action || '', d?.urgency || '', d?.loss_w ?? '', r.cause || '', r.action || '',
+      r.location_ok === undefined || r.location_ok === null || r.location_ok === '' ? '' : Number(r.location_ok) === 1 ? '맞음' : '다름', r.inspector || '', r.inspected_on || '', r.memo || '',
+      c ? new URL(viewerLink(c), location.href).href : '']);
+  }));
   // BOM so Excel opens the Korean text as UTF-8.
   const url = URL.createObjectURL(new Blob(['﻿' + lines.map(line => line.map(quote).join(',')).join('\r\n')], { type: 'text/csv' }));
-  Object.assign(document.createElement('a'), { href: url, download: `점검목록_${S.site.name}_${new Date().toISOString().slice(0, 10)}.csv` }).click();
+  Object.assign(document.createElement('a'), { href: url, download: `작업지시_${S.site.name}_${new Date().toISOString().slice(0, 10)}.csv` }).click();
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 
@@ -538,14 +655,6 @@ function select(id, focus = true, toViewer = true) {
   document.querySelector('#list .item.sel')?.scrollIntoView({ block: 'nearest' });
 }
 
-function toggleOrder(ids, force) {
-  ids.forEach(id => {
-    if (force ?? !state.orders[id]) state.orders[id] ||= { status: ORDER_STATUS[0], cause: '', action: '', memo: '' };
-    else delete state.orders[id];
-  });
-  saveOrders();
-}
-
 function toast(message) {
   document.querySelector('.toast')?.remove();
   const element = Object.assign(document.createElement('div'), { className: 'toast', textContent: message });
@@ -587,25 +696,20 @@ document.addEventListener('click', event => {
   if (act === 'zoom') state.zoom = Number(id);
   if (act === 'review') { if (id) state.reviews[state.module] = id; else delete state.reviews[state.module]; saveReviews(); }
   if (act === 'lightbox') state.lightbox = !state.lightbox;
-  if (act === 'pick') { toggleOrder([id]); toast(state.orders[id] ? '점검 목록에 담았습니다.' : '점검 목록에서 뺐습니다.'); }
-  if (act === 'pick-string') { const ids = S.candidates.filter(c => c.string === id).map(c => c.id); toggleOrder(ids, true); toast(`${id} 후보 ${ids.length}건을 담았습니다.`); }
-  if (act === 'pick-final') { const ids = S.candidates.filter(c => id === 'all' || (c.verdict || 'inspect') === id).map(c => c.id); toggleOrder(ids, true); toast(`${ids.length}건을 담았습니다.`); }
-  if (act === 'clear') { if (!confirm('점검 목록과 입력한 현장 결과를 모두 지울까요?')) return; state.orders = {}; saveOrders(); }
+  if (act === 'issue') return setStatus(id, '발행');
+  if (act === 'manual') { toast('작업지시에 추가합니다.'); return addManual(id); }
+  if (act === 'remove') return removeModule(target.dataset.o, target.dataset.m);
   render();
 });
 document.addEventListener('input', event => {
   if (event.target.id === 'q') { state.query = event.target.value; document.getElementById('list').innerHTML = listItems(); }
-  const { field, id } = event.target.dataset;
-  if (field === 'memo' && state.orders[id]) { state.orders[id].memo = event.target.value; saveOrders(); }
 });
 document.addEventListener('change', event => {
-  const { field, id } = event.target.dataset;
-  if (!field || field === 'memo' || !state.orders[id]) return;
-  state.orders[id][field] = event.target.value;
-  // Entering a result means the module was inspected.
-  if (field === 'cause' && event.target.value && state.orders[id].status === ORDER_STATUS[0]) state.orders[id].status = ORDER_STATUS[1];
-  saveOrders();
-  render();
+  const { res, o, m, status } = event.target.dataset;
+  if (status) return setStatus(status, event.target.value);
+  if (!res) return;
+  const value = res === 'location_ok' ? (event.target.value === '' ? null : Number(event.target.value)) : event.target.value;
+  saveResult(o, m, res, value);
 });
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape') {
@@ -618,8 +722,9 @@ document.addEventListener('keydown', event => {
   if (key === '/') { event.preventDefault(); document.getElementById('q')?.focus(); }
   if (key === 'j' || event.key === 'ArrowDown') { event.preventDefault(); stepCandidate(1); }
   if (key === 'k' || event.key === 'ArrowUp') { event.preventDefault(); stepCandidate(-1); }
-  if (key === 'a' && candidateById.has(state.module)) { toggleOrder([state.module]); toast(state.orders[state.module] ? '점검 목록에 담았습니다.' : '점검 목록에서 뺐습니다.'); render(); }
+  if (key === 'a' && candidateById.has(state.module) && !fieldOrder(state.module)) { toast('작업지시에 추가합니다.'); addManual(state.module); }
 });
 window.addEventListener('hashchange', () => { tooltip.hidden = true; render(); if (state.module) map?.select(indexById.get(state.module) ?? -1); });
 render();
+connect().then(() => { if (live.on) { orderIndex = null; render(); } });
 })();

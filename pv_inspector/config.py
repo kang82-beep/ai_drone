@@ -13,6 +13,11 @@ GEO_SURFACE_ABOVE_TAKEOFF_M = 1.48  # mean panel surface above the take-off poin
 GEO_YAW_OFFSET_DEG = -0.64          # gimbal yaw against the drawing rows
 GEO_CAMERA_FORWARD_M = 0.45         # exposure lags the position stamp by about 75 ms
 GEO_CAMERA_RIGHT_M = -0.09
+# Cause-estimation agent (과제_기획서 4.4). Nothing leaves this PC unless a model is named,
+# LLM_SEND_IMAGES is true and OPENAI_API_KEY is set in the environment (never in a file).
+LLM_MODEL = ""
+LLM_SEND_IMAGES = False
+LLM_MAX_MODULES = 60
 from pathlib import Path
 
 INPUT_IMG_DIR    = r"C:\Users\USER\Desktop\3호기\DJI_202607290944_006_3호기"

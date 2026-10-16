@@ -1,0 +1,235 @@
+{
+ "version": "2026-10-15 초안 (과제_기획서 4.4절, 운영관리 담당 검토 전)",
+ "note": "rule은 diagnosis.py의 판별 조건 이름이다. 원인·조치·긴급도·작업 종류는 이 파일만 고쳐도 바뀐다. 재확인(촬영 1회만 이상) 모듈은 field_from_recheck 규칙이나 안전 건이 아니면 다음 촬영 재확인 목록으로 간다.",
+ "rules": [
+  {
+   "rule": "inverter_wide",
+   "observation": "인버터 단위 전체 고온",
+   "cause": "인버터 정지 또는 출력 제한",
+   "action": "운전 상태 확인 후 점검",
+   "urgency": "우선",
+   "kind": "operation"
+  },
+  {
+   "rule": "jb_wide",
+   "observation": "접속반 단위 전체 고온",
+   "cause": "접속반 차단",
+   "action": "운전 상태 확인 후 접속반 점검",
+   "urgency": "우선",
+   "kind": "operation"
+  },
+  {
+   "rule": "string_wide",
+   "observation": "스트링 전체 고온",
+   "cause": "스트링 단선, 퓨즈 용단, 커넥터 이탈",
+   "action": "접속반 퓨즈·스트링 전류 측정",
+   "urgency": "우선",
+   "kind": "electrical"
+  },
+  {
+   "rule": "pid",
+   "observation": "스트링 끝 모듈들 불규칙 고온",
+   "cause": "PID 의심",
+   "action": "I-V 측정, 절연저항 측정",
+   "urgency": "보통",
+   "kind": "electrical"
+  },
+  {
+   "rule": "reflection",
+   "observation": "프레임마다 위치가 바뀌는 고온",
+   "cause": "태양 반사",
+   "action": "이상에서 제외 (다음 촬영에서 재확인)",
+   "urgency": "낮음",
+   "kind": "exclude"
+  },
+  {
+   "rule": "diode",
+   "observation": "모듈 1/3 띠 고온",
+   "cause": "바이패스 다이오드 동작 또는 고장",
+   "action": "음영 여부 확인 후 정션박스 점검",
+   "urgency": "우선",
+   "kind": "electrical"
+  },
+  {
+   "rule": "whole_module",
+   "observation": "모듈 전체 균일 고온",
+   "cause": "모듈 개방, 커넥터 불량",
+   "action": "커넥터·개방전압 확인",
+   "urgency": "우선",
+   "kind": "electrical"
+  },
+  {
+   "rule": "vegetation",
+   "observation": "행 아래쪽 띠 고온 + 음영 의심",
+   "cause": "식생 음영",
+   "action": "제초 후 재촬영",
+   "urgency": "낮음",
+   "kind": "weed"
+  },
+  {
+   "rule": "structure_shade",
+   "observation": "그림자 방향과 일치하는 패턴",
+   "cause": "구조물·수목 음영",
+   "action": "다른 시간대 재촬영",
+   "urgency": "낮음",
+   "kind": "reshoot"
+  },
+  {
+   "rule": "soiling",
+   "observation": "셀 고온 + 같은 위치에 오염(가시광 어두움)",
+   "cause": "오염에 의한 부분 음영",
+   "action": "청소 후 재촬영",
+   "urgency": "보통",
+   "kind": "clean"
+  },
+  {
+   "rule": "cell_defect",
+   "observation": "셀 고온 + 가시광 정상",
+   "cause": "셀 균열, 셀 불량, 납땜 불량",
+   "action": "현장 점검 (육안, 필요 시 I-V 측정)",
+   "urgency": "보통",
+   "kind": "field_check"
+  },
+  {
+   "rule": "connector_hotspot",
+   "observation": "정션박스·커넥터 위치 고온점",
+   "cause": "접촉 불량",
+   "action": "화재 위험, 최우선 점검",
+   "urgency": "최우선",
+   "kind": "electrical",
+   "safety": true
+  },
+  {
+   "rule": "edge_band_high",
+   "observation": "모듈 높은 쪽 띠 고온",
+   "cause": "반사 또는 음영",
+   "action": "다른 시간대 재촬영 또는 현장 확인",
+   "urgency": "낮음",
+   "kind": "reshoot"
+  },
+  {
+   "rule": "unknown",
+   "observation": "위 어느 것에도 맞지 않음",
+   "cause": "원인 판별 어려움",
+   "action": "추가 촬영 또는 현장 확인",
+   "urgency": "보통",
+   "kind": "field_check"
+  }
+ ],
+ "kinds": {
+  "operation": {
+   "label": "운전 상태 확인",
+   "equipment": [
+    "인버터·접속반 운전 기록",
+    "클램프 미터"
+   ]
+  },
+  "electrical": {
+   "label": "전기 점검",
+   "equipment": [
+    "I-V 측정기",
+    "클램프 미터",
+    "열화상 카메라",
+    "절연저항계"
+   ]
+  },
+  "field_check": {
+   "label": "현장 확인",
+   "equipment": [
+    "열화상 카메라",
+    "I-V 측정기"
+   ]
+  },
+  "clean": {
+   "label": "청소",
+   "equipment": [
+    "청소 도구",
+    "열화상 카메라"
+   ]
+  },
+  "weed": {
+   "label": "제초",
+   "equipment": [
+    "제초 장비"
+   ]
+  },
+  "reshoot": {
+   "label": "재촬영",
+   "equipment": [
+    "드론 (다른 시간대)"
+   ]
+  },
+  "exclude": {
+   "label": "제외 (다음 촬영 재확인)",
+   "equipment": []
+  },
+  "recheck": {
+   "label": "다음 촬영 재확인",
+   "equipment": [
+    "드론 (다음 정기 촬영)"
+   ]
+  },
+  "manual": {
+   "label": "운영자 추가 확인",
+   "equipment": [
+    "열화상 카메라"
+   ]
+  },
+  "retake": {
+   "label": "재촬영 (회전 구간에서만 촬영됨)",
+   "equipment": [
+    "드론 (직선 비행으로 다시)"
+   ]
+  }
+ },
+ "loss_w": {
+  "module_rated": 250,
+  "string_modules": 20,
+  "diode_share": 0.333,
+  "cell_w_per_c": 5,
+  "cell_max_share": 0.333
+ },
+ "field_from_recheck": [
+  "string_wide",
+  "jb_wide",
+  "inverter_wide"
+ ],
+ "ai_downgrade": {
+  "note": "GPT 외관 판단으로 현장 점검을 줄이는 조건. to = 외관별로 바꿀 작업 종류. 전기 점검·운전 확인은 내리지 않는다. audit_every장 중 1장은 내리지 않고 현장에 남겨 하향이 맞았는지 잰다. 2026-10-16: 신뢰도 중간까지 허용, 검증 표본 5장→3장 중 1장.",
+  "field_check": {
+   "to": {
+    "그림자": "recheck",
+    "풀·식생": "weed"
+   },
+   "confidence": [
+    "높음",
+    "중간"
+   ],
+   "rule_needs_one_of": [
+    "vegetation",
+    "structure_shade",
+    "soiling",
+    "edge_band_high"
+   ]
+  },
+  "weed": {
+   "to": {
+    "이상 없음": "recheck"
+   },
+   "confidence": [
+    "높음",
+    "중간"
+   ]
+  },
+  "clean": {
+   "to": {
+    "이상 없음": "recheck"
+   },
+   "confidence": [
+    "높음",
+    "중간"
+   ]
+  },
+  "audit_every": 3
+ }
+}

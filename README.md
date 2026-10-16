@@ -1,5 +1,14 @@
 # 드론 열화상 태양광 검사
 
+## 운영 흐름 (회차마다)
+
+```powershell
+python run_flight.py --input <촬영 폴더> --output results/<비행> --config config.local.json   # 분석부터 작업지시까지
+python serve_console.py                                                                  # 웹 관제: http://127.0.0.1:8765
+```
+
+`run_flight.py`는 분석 → 도면 주소 연결 → 모듈 판정 → 이상 형상 → 원인 추정·작업지시 → 웹 데이터 순으로 돌고, 이미 끝난 단계는 건너뜁니다(`--force <단계>`로 다시). 카메라·현장·비행 속도가 바뀌면 `--calibrate`를 붙입니다. 작업지시 발행과 현장 결과는 `results/history.db`에 저장되며, 이 파일은 반드시 백업합니다. 원인 판단 기준표는 `pv_inspector/data/knowledge_base.json`에서 고칩니다. GPT 보강은 설정에 `LLM_MODEL`과 `LLM_SEND_IMAGES: true`를 넣고 환경 변수 `OPENAI_API_KEY`를 둘 때만 동작합니다. 전체 설계는 `과제_기획서.md`, 위치 보정은 `GEOLOCATION.md`, 보관한 일회성 스크립트는 `archive/`에 있습니다.
+
 **현장 검토표:** 분석 후 `field_review.html`에서 원본/크롭/오버레이와 검토 사유를 확인하고 검수 CSV 양식을 받을 수 있습니다. 온도 품질과 모델/최종 판정 근거를 보존합니다. [바로 확인하는 방법과 모델 정확도 개선 준비](FIELD_REVIEW.md)를 참고하세요.
 
 **배열 우선 분리:** RGB의 국소 2단 배열·원본 경계를 이용한 분리/중복 정리/빈칸 재검사를 구현했습니다. 운영 RGB 지도에서 새 결과와 기존 후보를 전환할 수 있습니다. 열화상은 별도 검토 제안을 저장합니다. [적용 방법과 검증 범위](ARRAY_REFINEMENT.md)를 참고하세요.

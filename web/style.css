@@ -250,3 +250,11 @@ ul.plain { padding-left: 16px; display: flex; flex-direction: column; gap: 6px; 
   table.orders select, table.orders input { border: 0; appearance: none; padding: 0; }
   .table-box { overflow: visible; }
 }
+
+/* Work orders: collapsible order cards with the generated instructions. */
+details.group { border-top: 1px solid var(--border); padding: 10px 0; }
+details.group > summary { cursor: pointer; list-style-position: inside; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+details.group > summary b { margin-right: 4px; }
+.instructions { white-space: pre-wrap; font: inherit; font-size: 12.5px; color: var(--text-2, inherit); background: var(--inset); border-radius: 8px; padding: 10px 12px; margin: 8px 0; max-height: 220px; overflow: auto; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 6px; max-height: 180px; overflow: auto; }
+@media print { details.group { break-inside: avoid; } details.group:not([open]) { display: none; } }
